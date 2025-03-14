@@ -58,6 +58,18 @@
       {
         "command": "extension.expandSexpSelection",
         "title": "Expand Selection to Parent S-expression"
+      },
+      {
+        "command": "extension.transposeSexp",
+        "title": "Transpose S-expressions (Swap Current with Next)"
+      },
+      {
+        "command": "extension.moveSexpUp",
+        "title": "Move S-expression Up (Swap with Previous)"
+      },
+      {
+        "command": "extension.moveSexpDown",
+        "title": "Move S-expression Down (Swap with Next)"
       }
     ],
     "keybindings": [
@@ -104,6 +116,21 @@
       {
         "command": "extension.expandSexpSelection",
         "key": "ctrl+alt+e",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "extension.transposeSexp",
+        "key": "ctrl+alt+t",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "extension.moveSexpUp",
+        "key": "ctrl+alt+up",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "extension.moveSexpDown",
+        "key": "ctrl+alt+down",
         "when": "editorTextFocus"
       }
     ],

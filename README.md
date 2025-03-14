@@ -17,7 +17,7 @@ These features help you quickly clean up, refactor, or reuse code without having
 
 ### 🧭 S-expression Navigation and Selection (Emacs-like)
 
-The extension provides Emacs-like S-expression navigation and selection commands with enhanced visual feedback:
+The extension provides Emacs-like S-expression navigation, selection, and transposition commands with enhanced visual feedback:
 
 #### Navigation Commands
 - **Forward S-expression**: Navigate to the end of the next balanced expression
@@ -28,7 +28,12 @@ The extension provides Emacs-like S-expression navigation and selection commands
 - **Mark Parent S-expression**: Select the parent expression that contains the current cursor position
 - **Expand Selection to Parent S-expression**: Expand the current selection to include the parent expression
 
-These features help programmers quickly navigate and manipulate code by treating code as structured expressions (like Lisp S-expressions), jumping between balanced delimiters such as parentheses, brackets, and braces, as well as identifiers and literals.
+#### Transposition Commands
+- **Transpose S-expressions**: Swap the current S-expression with the next one
+- **Move S-expression Up**: Move the current S-expression up in a list (swap with previous sibling)
+- **Move S-expression Down**: Move the current S-expression down in a list (swap with next sibling)
+
+These features help programmers quickly navigate, manipulate, and restructure code by treating code as structured expressions (like Lisp S-expressions), jumping between balanced delimiters such as parentheses, brackets, and braces, as well as identifiers and literals.
 
 The enhanced visual feedback system provides:
 - Visual highlighting of the source and target positions
@@ -71,6 +76,9 @@ The extension intelligently:
 | `markSexp` | Current or next balanced expression | Everything | Select expression |
 | `markParentSexp` | Parent expression of current cursor position | Everything | Select parent expression |
 | `expandSelectionToParentSexp` | Current selection | Everything | Expand selection to parent expression |
+| `transposeSexp` | Current and next S-expression | Everything | Swap S-expressions |
+| `moveSexpUp` | Current S-expression | Everything | Move S-expression up in a list |
+| `moveSexpDown` | Current S-expression | Everything | Move S-expression down in a list |
 
 ### 🧩 Supported Languages
 
@@ -105,6 +113,14 @@ flowchart TD
     O --> Q[Move Cursor & Visual Feedback]
     P --> Q
     Q --> R[Animate Path & Highlight]
+
+    S[Position Cursor] --> T[S-expression Transposition]
+    T -->|Transpose| U[Swap S-expressions]
+    T -->|Move Up| V[Move S-expression Up]
+    T -->|Move Down| W[Move S-expression Down]
+    U --> X[Update Code]
+    V --> X
+    W --> X
 ```
 
 ## 🚀 Usage
@@ -121,6 +137,9 @@ flowchart TD
    - `Extension: Mark S-expression`
    - `Extension: Mark Parent S-expression`
    - `Extension: Expand Selection to Parent S-expression`
+   - `Extension: Transpose S-expressions`
+   - `Extension: Move S-expression Up`
+   - `Extension: Move S-expression Down`
 
 4. Alternatively, use the status bar indicator to:
    - View your current scope context
@@ -176,6 +195,21 @@ For faster access, the extension provides the following keyboard shortcuts:
   "key": "ctrl+alt+e",
   "command": "extension.expandSelectionToParentSexp",
   "when": "editorTextFocus"
+},
+{
+  "key": "ctrl+alt+t",
+  "command": "extension.transposeSexp",
+  "when": "editorTextFocus"
+},
+{
+  "key": "ctrl+alt+u",
+  "command": "extension.moveSexpUp",
+  "when": "editorTextFocus"
+},
+{
+  "key": "ctrl+alt+d",
+  "command": "extension.moveSexpDown",
+  "when": "editorTextFocus"
 }
 ```
 
@@ -185,6 +219,9 @@ The S-expression navigation commands use the familiar Emacs keybindings:
 - `Ctrl+Alt+M` - Mark S-expression
 - `Ctrl+Alt+P` - Mark Parent S-expression
 - `Ctrl+Alt+E` - Expand Selection to Parent S-expression
+- `Ctrl+Alt+T` - Transpose S-expressions
+- `Ctrl+Alt+U` - Move S-expression Up
+- `Ctrl+Alt+D` - Move S-expression Down
 
 ## 📋 Requirements
 

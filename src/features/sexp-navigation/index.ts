@@ -53,12 +53,31 @@ export class SexpNavigationFeature extends FeatureModule {
       this.handlers.handleExpandSexpSelection.bind(this.handlers)
     );
     
+    // Transposition commands
+    const transposeSexpDisposable = this.commandRegistry.registerTextEditorCommand(
+      'extension.transposeSexp',
+      this.handlers.handleTransposeSexp.bind(this.handlers)
+    );
+    
+    const moveSexpUpDisposable = this.commandRegistry.registerTextEditorCommand(
+      'extension.moveSexpUp',
+      this.handlers.handleMoveSexpUp.bind(this.handlers)
+    );
+    
+    const moveSexpDownDisposable = this.commandRegistry.registerTextEditorCommand(
+      'extension.moveSexpDown',
+      this.handlers.handleMoveSexpDown.bind(this.handlers)
+    );
+    
     // Add all disposables
     this.addDisposable(forwardSexpDisposable);
     this.addDisposable(backwardSexpDisposable);
     this.addDisposable(markSexpDisposable);
     this.addDisposable(markParentSexpDisposable);
     this.addDisposable(expandSexpSelectionDisposable);
+    this.addDisposable(transposeSexpDisposable);
+    this.addDisposable(moveSexpUpDisposable);
+    this.addDisposable(moveSexpDownDisposable);
   }
 }
 
