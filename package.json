@@ -94,6 +94,26 @@
           "default": true,
           "description": "Whether to automatically copy deleted content to the clipboard",
           "scope": "window"
+        },
+        "vscodeUtilities.enhancedSexpNavigationAnimation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to show enhanced animations during S-expression navigation, including path visualization and source highlighting",
+          "scope": "window"
+        },
+        "vscodeUtilities.sexpNavigationHighlightDuration": {
+          "type": "integer",
+          "default": 600,
+          "description": "Duration in milliseconds for S-expression navigation highlights to remain visible",
+          "scope": "window",
+          "minimum": 100,
+          "maximum": 2000
+        },
+        "vscodeUtilities.showExpressionTypeInStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to show the expression type (e.g., array, object, function call) in the status bar during navigation",
+          "scope": "window"
         }
       }
     }

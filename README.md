@@ -17,12 +17,19 @@ These features help you quickly clean up, refactor, or reuse code without having
 
 ### 🧭 S-expression Navigation (Emacs-like)
 
-The extension provides Emacs-like S-expression navigation commands:
+The extension provides Emacs-like S-expression navigation commands with enhanced visual feedback:
 
 - **Forward S-expression**: Navigate to the end of the next balanced expression
 - **Backward S-expression**: Navigate to the beginning of the previous balanced expression
 
 These features help programmers quickly navigate through code by treating code as structured expressions (like Lisp S-expressions), jumping between balanced delimiters such as parentheses, brackets, and braces, as well as identifiers and literals.
+
+The enhanced visual feedback system provides:
+- Visual highlighting of the source and target positions
+- Animated path visualization showing the navigation direction
+- Automatic detection and display of expression types (array, object, string, etc.)
+- Temporary status bar and notification messages with navigation details
+- Customizable animation duration and visual effects
 
 ### 📊 Status Bar Scope Indicator
 
@@ -42,6 +49,7 @@ The extension intelligently:
 - 🚀 Navigates efficiently through code using structural patterns
 - 📋 Automatically copies deleted or selected content to the clipboard (configurable)
 - 🔆 Provides visual highlighting before deletion for confirmation (configurable)
+- 🎯 Renders enhanced visual feedback during S-expression navigation (configurable)
 
 ### Command Comparison
 
@@ -84,8 +92,9 @@ flowchart TD
     M[Position Cursor] --> N[S-expression Navigation]
     N -->|Forward| O[Find Next Expression End]
     N -->|Backward| P[Find Previous Expression Start]
-    O --> Q[Move Cursor & Highlight]
+    O --> Q[Move Cursor & Visual Feedback]
     P --> Q
+    Q --> R[Animate Path & Highlight]
 ```
 
 ## 🚀 Usage
@@ -156,6 +165,9 @@ This extension provides the following settings:
 
 * `vscodeUtilities.highlightBeforeDeleting`: Toggle whether to highlight code before deletion and show a confirmation dialog (default: false)
 * `vscodeUtilities.copyToClipboard`: Toggle whether to automatically copy deleted or selected content to the clipboard (default: true)
+* `vscodeUtilities.enhancedSexpNavigationAnimation`: Toggle enhanced animations during S-expression navigation (default: true)
+* `vscodeUtilities.sexpNavigationHighlightDuration`: Duration in milliseconds for S-expression navigation highlights (default: 600)
+* `vscodeUtilities.showExpressionTypeInStatusBar`: Toggle showing expression type in status bar during navigation (default: true)
 
 ## ⚠️ Known Issues
 
@@ -172,7 +184,7 @@ This extension provides the following settings:
   - Delete content within bracket scopes
   - Select and copy code scopes
   - Select and copy bracket scopes
-  - Emacs-like S-expression navigation
+  - Emacs-like S-expression navigation with enhanced visual feedback
   - Status bar scope indicator
   - Clipboard integration
   - Visual highlighting and confirmation dialogs

@@ -19,8 +19,13 @@ export class SexpNavigationHandlers {
     const sexpBoundary = navigator.findForwardSexp(editor.document, position);
     
     if (sexpBoundary) {
-      // Highlight the expression briefly for visual feedback
-      SexpNavigationUiUtils.highlightSexp(editor, sexpBoundary);
+      // Use enhanced visual feedback
+      SexpNavigationUiUtils.highlightSexpWithEnhancedFeedback(
+        editor,
+        sexpBoundary,
+        'forward',
+        position
+      );
       
       // Move the cursor to the end position of the expression
       const newPosition = new vscode.Position(sexpBoundary.endLine, sexpBoundary.endChar);
@@ -31,9 +36,6 @@ export class SexpNavigationHandlers {
         new vscode.Range(newPosition, newPosition),
         vscode.TextEditorRevealType.Default
       );
-      
-      // Show a status message
-      SexpNavigationUiUtils.showNavigationMessage('forward');
     }
   }
   
@@ -49,8 +51,13 @@ export class SexpNavigationHandlers {
     const sexpBoundary = navigator.findBackwardSexp(editor.document, position);
     
     if (sexpBoundary) {
-      // Highlight the expression briefly for visual feedback
-      SexpNavigationUiUtils.highlightSexp(editor, sexpBoundary);
+      // Use enhanced visual feedback
+      SexpNavigationUiUtils.highlightSexpWithEnhancedFeedback(
+        editor,
+        sexpBoundary,
+        'backward',
+        position
+      );
       
       // Move the cursor to the start position of the expression
       const newPosition = new vscode.Position(sexpBoundary.startLine, sexpBoundary.startChar);
@@ -61,9 +68,6 @@ export class SexpNavigationHandlers {
         new vscode.Range(newPosition, newPosition),
         vscode.TextEditorRevealType.Default
       );
-      
-      // Show a status message
-      SexpNavigationUiUtils.showNavigationMessage('backward');
     }
   }
 }
