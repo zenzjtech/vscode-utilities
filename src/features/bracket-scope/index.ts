@@ -40,19 +40,22 @@ export class BracketScopeFeature extends FeatureModule {
    * Handle the delete bracket scope command
    * @param editor The active text editor
    * @param edit The editor edit object
-   * @param position The cursor position
+   * @param position Optional cursor position (defaults to current selection)
    */
   private async handleDeleteBracketScope(
     editor: vscode.TextEditor, 
     edit: vscode.TextEditorEdit, 
-    position: vscode.Position
+    position?: vscode.Position
   ): Promise<void> {
     const document = editor.document;
-    const cursorLine = position.line;
-    const cursorPosition = position.character;
+    
+    // If position is not provided, use the active selection position
+    const cursorPosition = position || editor.selection.active;
+    const cursorLine = cursorPosition.line;
+    const cursorChar = cursorPosition.character;
     
     // First, try to find the nearest bracket pair containing the cursor
-    const bracketRange = this.findBracketPairContainingCursor(document, cursorLine, cursorPosition);
+    const bracketRange = this.findBracketPairContainingCursor(document, cursorLine, cursorChar);
     
     if (bracketRange) {
       // Delete the content between brackets (excluding the brackets themselves)
@@ -66,7 +69,7 @@ export class BracketScopeFeature extends FeatureModule {
       vscode.window.showInformationMessage("Deleted content between brackets.");
     } else {
       // If no bracket pair contains the cursor, look for the next bracket pair
-      const nextBracketRange = this.findNextBracketPair(document, cursorLine, cursorPosition);
+      const nextBracketRange = this.findNextBracketPair(document, cursorLine, cursorChar);
       
       if (nextBracketRange) {
         // Delete the content between the next bracket pair (excluding the brackets)

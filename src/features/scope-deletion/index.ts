@@ -82,56 +82,81 @@ export class ScopeDeletionFeature extends FeatureModule {
   }
 
   /**
+   * Helper method to find the end line of a scope starting from a given line
+   * @param document The text document
+   * @param startLine The line where the scope starts
+   * @param currentLine The current line (cursor position)
+   * @returns The end line of the scope if the currentLine is within the scope, or null if not found
+   */
+  private findScopeBoundary(document: vscode.TextDocument, startLine: number, currentLine: number): number | null {
+    const maxLines = document.lineCount;
+    let bracketCount = 0;
+    let foundOpeningBracket = false;
+    
+    for (let i = startLine; i < maxLines; i++) {
+      const bracketLine = document.lineAt(i).text;
+      
+      // Count brackets
+      for (let char = 0; char < bracketLine.length; char++) {
+        if (bracketLine[char] === '{') {
+          foundOpeningBracket = true;
+          bracketCount++;
+        } else if (bracketLine[char] === '}') {
+          bracketCount--;
+          
+          // If brackets are balanced and we found the closing bracket
+          if (foundOpeningBracket && bracketCount === 0) {
+            // Check if current position is within this range
+            if (i >= currentLine) {
+              return i; // End line of the scope
+            } else {
+              // This scope ends before our current position, so it doesn't contain it
+              return null;
+            }
+          }
+        }
+      }
+    }
+    
+    return null; // No balanced closing bracket found
+  }
+
+  /**
+   * Helper method to delete a scope by its boundaries
+   * @param editor The active text editor
+   * @param scopeStartLine The line where the scope starts
+   * @param scopeType The type of scope being deleted (for the success message)
+   */
+  private async deleteScope(editor: vscode.TextEditor, scopeStartLine: number, scopeType: string): Promise<void> {
+    const document = editor.document;
+    const endLine = this.findScopeBoundary(document, scopeStartLine, scopeStartLine);
+    
+    if (endLine !== null) {
+      // Create a range from the scope start to end
+      const range = new vscode.Range(
+        new vscode.Position(scopeStartLine, 0),
+        new vscode.Position(endLine, document.lineAt(endLine).text.length)
+      );
+      
+      // Delete the scope
+      await editor.edit(editBuilder => {
+        editBuilder.delete(range);
+      });
+      
+      vscode.window.showInformationMessage(`${scopeType} deleted successfully!`);
+    } else {
+      vscode.window.showErrorMessage(`Couldn't determine ${scopeType.toLowerCase()} boundaries.`);
+    }
+  }
+
+  /**
    * Delete a function or method
    * @param editor The active text editor
    * @param edit The editor edit object
    * @param position Position where the function starts
    */
   private async deleteFunction(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, position: vscode.Position): Promise<void> {
-    const document = editor.document;
-    const line_number = position.line;
-    const line_text = document.lineAt(line_number).text;
-    
-    let function_start_line = line_number;
-    let function_end_line = -1;
-    let bracket_count = 0;
-    let found_opening_bracket = false;
-    
-    // Find opening bracket
-    for (let i = function_start_line; i < document.lineCount; i++) {
-      const current_line = document.lineAt(i).text;
-      
-      if (current_line.includes('{')) {
-        found_opening_bracket = true;
-        bracket_count++;
-      }
-      
-      if (found_opening_bracket && current_line.includes('}')) {
-        bracket_count--;
-        
-        if (bracket_count === 0) {
-          function_end_line = i;
-          break;
-        }
-      }
-    }
-    
-    if (function_end_line !== -1) {
-      // Create a range from the function start to end
-      const range = new vscode.Range(
-        new vscode.Position(function_start_line, 0),
-        new vscode.Position(function_end_line, document.lineAt(function_end_line).text.length)
-      );
-      
-      // Delete the function
-      await editor.edit(editBuilder => {
-        editBuilder.delete(range);
-      });
-      
-      vscode.window.showInformationMessage("Function deleted successfully!");
-    } else {
-      vscode.window.showErrorMessage("Couldn't determine function boundaries.");
-    }
+    await this.deleteScope(editor, position.line, "Function");
   }
 
   /**
@@ -141,50 +166,7 @@ export class ScopeDeletionFeature extends FeatureModule {
    * @param position Position where the class starts
    */
   private async deleteClass(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, position: vscode.Position): Promise<void> {
-    const document = editor.document;
-    const line_number = position.line;
-    const line_text = document.lineAt(line_number).text;
-    
-    let class_start_line = line_number;
-    let class_end_line = -1;
-    let bracket_count = 0;
-    let found_opening_bracket = false;
-    
-    // Find opening and closing brackets
-    for (let i = class_start_line; i < document.lineCount; i++) {
-      const current_line = document.lineAt(i).text;
-      
-      if (current_line.includes('{')) {
-        found_opening_bracket = true;
-        bracket_count++;
-      }
-      
-      if (found_opening_bracket && current_line.includes('}')) {
-        bracket_count--;
-        
-        if (bracket_count === 0) {
-          class_end_line = i;
-          break;
-        }
-      }
-    }
-    
-    if (class_end_line !== -1) {
-      // Create a range from the class start to end
-      const range = new vscode.Range(
-        new vscode.Position(class_start_line, 0),
-        new vscode.Position(class_end_line, document.lineAt(class_end_line).text.length)
-      );
-      
-      // Delete the class
-      await editor.edit(editBuilder => {
-        editBuilder.delete(range);
-      });
-      
-      vscode.window.showInformationMessage("Class deleted successfully!");
-    } else {
-      vscode.window.showErrorMessage("Couldn't determine class boundaries.");
-    }
+    await this.deleteScope(editor, position.line, "Class");
   }
 
   /**
@@ -194,50 +176,7 @@ export class ScopeDeletionFeature extends FeatureModule {
    * @param position Position where the interface starts
    */
   private async deleteInterface(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, position: vscode.Position): Promise<void> {
-    const document = editor.document;
-    const line_number = position.line;
-    const line_text = document.lineAt(line_number).text;
-    
-    let interface_start_line = line_number;
-    let interface_end_line = -1;
-    let bracket_count = 0;
-    let found_opening_bracket = false;
-    
-    // Find opening and closing brackets
-    for (let i = interface_start_line; i < document.lineCount; i++) {
-      const current_line = document.lineAt(i).text;
-      
-      if (current_line.includes('{')) {
-        found_opening_bracket = true;
-        bracket_count++;
-      }
-      
-      if (found_opening_bracket && current_line.includes('}')) {
-        bracket_count--;
-        
-        if (bracket_count === 0) {
-          interface_end_line = i;
-          break;
-        }
-      }
-    }
-    
-    if (interface_end_line !== -1) {
-      // Create a range from the interface start to end
-      const range = new vscode.Range(
-        new vscode.Position(interface_start_line, 0),
-        new vscode.Position(interface_end_line, document.lineAt(interface_end_line).text.length)
-      );
-      
-      // Delete the interface
-      await editor.edit(editBuilder => {
-        editBuilder.delete(range);
-      });
-      
-      vscode.window.showInformationMessage("Interface deleted successfully!");
-    } else {
-      vscode.window.showErrorMessage("Couldn't determine interface boundaries.");
-    }
+    await this.deleteScope(editor, position.line, "Interface");
   }
 
   /**
@@ -247,55 +186,7 @@ export class ScopeDeletionFeature extends FeatureModule {
    * @param position Position where the enum starts
    */
   private async deleteEnum(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, position: vscode.Position): Promise<void> {
-    const document = editor.document;
-    const line_number = position.line;
-    const line_text = document.lineAt(line_number).text;
-    
-    let enum_start_line = line_number;
-    let enum_end_line = -1;
-    let bracket_count = 0;
-    let found_opening_bracket = false;
-    
-    // Find opening and closing brackets
-    for (let i = enum_start_line; i < document.lineCount; i++) {
-      const current_line = document.lineAt(i).text;
-      
-      if (current_line.includes('{')) {
-        found_opening_bracket = true;
-        bracket_count++;
-      }
-      
-      if (found_opening_bracket && current_line.includes('}')) {
-        bracket_count--;
-        
-        if (bracket_count === 0) {
-          enum_end_line = i;
-          break;
-        }
-      }
-    }
-    
-    if (enum_end_line !== -1) {
-      // Create a range from the enum start to end
-      const range = new vscode.Range(
-        new vscode.Position(enum_start_line, 0),
-        new vscode.Position(enum_end_line, document.lineAt(enum_end_line).text.length)
-      );
-      
-      // Delete the enum
-      await editor.edit(editBuilder => {
-        editBuilder.delete(range);
-      });
-      
-      vscode.window.showInformationMessage("Enum deleted successfully!");
-    } else {
-      vscode.window.showErrorMessage("Couldn't determine enum boundaries.");
-    }
-  }
-
-  // Helper utility to get indentation level
-  private getIndentation(line: string): string {
-    return line.match(/^(\s*)/)![1];
+    await this.deleteScope(editor, position.line, "Enum");
   }
 
   /**
@@ -321,33 +212,9 @@ export class ScopeDeletionFeature extends FeatureModule {
       
       if (isFunctionDef) {
         // Verify if this function contains the current position
-        // by checking bracket balance
-        let bracketCount = 0;
-        let foundOpeningBracket = false;
-        
-        for (let i = line; i < maxLines; i++) {
-          const bracketLine = document.lineAt(i).text;
-          
-          // Count brackets
-          for (let char = 0; char < bracketLine.length; char++) {
-            if (bracketLine[char] === '{') {
-              foundOpeningBracket = true;
-              bracketCount++;
-            } else if (bracketLine[char] === '}') {
-              bracketCount--;
-              
-              // If brackets are balanced and we found the closing bracket
-              if (foundOpeningBracket && bracketCount === 0) {
-                // Check if current position is within this range
-                if (i >= currentLine) {
-                  return { startLine: line };
-                } else {
-                  // This function ends before our position, so it doesn't contain it
-                  break;
-                }
-              }
-            }
-          }
+        const scopeEndLine = this.findScopeBoundary(document, line, currentLine);
+        if (scopeEndLine !== null) {
+          return { startLine: line };
         }
       }
     }
@@ -371,65 +238,17 @@ export class ScopeDeletionFeature extends FeatureModule {
       
       // Check for enum definition
       if (/^(export\s+)?(declare\s+)?enum\s+\w+/.test(lineText)) {
-        // Verify if this enum contains the current position
-        let bracketCount = 0;
-        let foundOpeningBracket = false;
-        
-        for (let i = line; i < maxLines; i++) {
-          const bracketLine = document.lineAt(i).text;
-          
-          // Count brackets
-          for (let char = 0; char < bracketLine.length; char++) {
-            if (bracketLine[char] === '{') {
-              foundOpeningBracket = true;
-              bracketCount++;
-            } else if (bracketLine[char] === '}') {
-              bracketCount--;
-              
-              // If brackets are balanced and we found the closing bracket
-              if (foundOpeningBracket && bracketCount === 0) {
-                // Check if current position is within this range
-                if (i >= currentLine) {
-                  return { startLine: line, scopeType: 'enum' };
-                } else {
-                  // This enum ends before our position, so it doesn't contain it
-                  break;
-                }
-              }
-            }
-          }
+        const scopeEndLine = this.findScopeBoundary(document, line, currentLine);
+        if (scopeEndLine !== null) {
+          return { startLine: line, scopeType: 'enum' };
         }
       }
       
       // Check for interface definition
       if (/^(export\s+)?(declare\s+)?interface\s+\w+/.test(lineText)) {
-        // Verify if this interface contains the current position
-        let bracketCount = 0;
-        let foundOpeningBracket = false;
-        
-        for (let i = line; i < maxLines; i++) {
-          const bracketLine = document.lineAt(i).text;
-          
-          // Count brackets
-          for (let char = 0; char < bracketLine.length; char++) {
-            if (bracketLine[char] === '{') {
-              foundOpeningBracket = true;
-              bracketCount++;
-            } else if (bracketLine[char] === '}') {
-              bracketCount--;
-              
-              // If brackets are balanced and we found the closing bracket
-              if (foundOpeningBracket && bracketCount === 0) {
-                // Check if current position is within this range
-                if (i >= currentLine) {
-                  return { startLine: line, scopeType: 'interface' };
-                } else {
-                  // This interface ends before our position, so it doesn't contain it
-                  break;
-                }
-              }
-            }
-          }
+        const scopeEndLine = this.findScopeBoundary(document, line, currentLine);
+        if (scopeEndLine !== null) {
+          return { startLine: line, scopeType: 'interface' };
         }
       }
       
@@ -437,37 +256,18 @@ export class ScopeDeletionFeature extends FeatureModule {
       if (/^(export\s+)?(abstract\s+)?(class)\s+\w+/.test(lineText) || 
           (line > 0 && /^@\w+/.test(document.lineAt(line - 1).text.trim()) && /^(export\s+)?(abstract\s+)?(class)\s+\w+/.test(lineText)) ||
           /^(export\s+)?(declare\s+)?(abstract\s+)?(class)\s+\w+/.test(lineText)) {
-        // Verify if this class contains the current position
-        let bracketCount = 0;
-        let foundOpeningBracket = false;
-        
-        for (let i = line; i < maxLines; i++) {
-          const bracketLine = document.lineAt(i).text;
-          
-          // Count brackets
-          for (let char = 0; char < bracketLine.length; char++) {
-            if (bracketLine[char] === '{') {
-              foundOpeningBracket = true;
-              bracketCount++;
-            } else if (bracketLine[char] === '}') {
-              bracketCount--;
-              
-              // If brackets are balanced and we found the closing bracket
-              if (foundOpeningBracket && bracketCount === 0) {
-                // Check if current position is within this range
-                if (i >= currentLine) {
-                  return { startLine: line, scopeType: 'class' };
-                } else {
-                  // This class ends before our position, so it doesn't contain it
-                  break;
-                }
-              }
-            }
-          }
+        const scopeEndLine = this.findScopeBoundary(document, line, currentLine);
+        if (scopeEndLine !== null) {
+          return { startLine: line, scopeType: 'class' };
         }
       }
     }
     
     return null;
+  }
+
+  // Helper utility to get indentation level
+  private getIndentation(line: string): string {
+    return line.match(/^(\s*)/)![1];
   }
 }
