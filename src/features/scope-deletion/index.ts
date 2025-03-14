@@ -257,8 +257,10 @@ export class ScopeDeletionFeature extends FeatureModule {
     for (let line = currentLine; line >= 0; line--) {
       const lineText = document.lineAt(line).text.trim();
       
-      // Check for class definition
-      if (/^class\s+\w+/.test(lineText)) {
+      // Check for class definition - improved to handle TypeScript decorators and export patterns
+      if (/^(export\s+)?(abstract\s+)?(class)\s+\w+/.test(lineText) || 
+          (line > 0 && /^@\w+/.test(document.lineAt(line - 1).text.trim()) && /^(export\s+)?(abstract\s+)?(class)\s+\w+/.test(lineText)) ||
+          /^(export\s+)?(declare\s+)?(abstract\s+)?(class)\s+\w+/.test(lineText)) {
         // Verify if this class contains the current position
         let bracketCount = 0;
         let foundOpeningBracket = false;
