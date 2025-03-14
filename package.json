@@ -27,7 +27,18 @@
         "command": "extension.deleteCurrentBracketScope",
         "title": "Delete Content Within Current Brackets"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "VS Code Utilities",
+      "properties": {
+        "vscodeUtilities.highlightBeforeDeleting": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to highlight the scope before deleting it and show a confirmation dialog",
+          "scope": "window"
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "yarn run package",

@@ -51,6 +51,10 @@ export class BracketScopeFeature extends FeatureModule {
     const cursorLine = cursorPosition.line;
     const cursorChar = cursorPosition.character;
     
+    // Check if highlighting is enabled in configuration
+    const config = vscode.workspace.getConfiguration('vscodeUtilities');
+    const highlightBeforeDeleting = config.get<boolean>('highlightBeforeDeleting', false);
+    
     // First, try to find the nearest bracket pair containing the cursor
     const bracketRange = this.findBracketPairContainingCursor(document, cursorLine, cursorChar);
     
@@ -77,9 +81,23 @@ export class BracketScopeFeature extends FeatureModule {
         // Ignore any errors in getting context
       }
       
-      // Highlight the content and ask for confirmation
-      if (await this.highlightAndConfirmBracketDeletion(editor, contentRange, `bracket content${contextText}`, linesRemoved)) {
-        // Delete the content between brackets (excluding the brackets themselves)
+      if (highlightBeforeDeleting) {
+        // Highlight the content and ask for confirmation
+        if (await this.highlightAndConfirmBracketDeletion(editor, contentRange, `bracket content${contextText}`, linesRemoved)) {
+          // Delete the content between brackets (excluding the brackets themselves)
+          await editor.edit(editBuilder => {
+            editBuilder.delete(contentRange);
+          });
+          
+          // Show detailed message with expanded information
+          const message = `Deleted content between brackets${contextText}`;
+          const detailMessage = `From line ${bracketRange.openBracketLine + 1} to ${bracketRange.closeBracketLine + 1} (${linesRemoved} lines affected)`;
+          
+          // Use information message type with detail option for expanded view
+          vscode.window.showInformationMessage(message, { detail: detailMessage, modal: false });
+        }
+      } else {
+        // Delete without highlighting
         await editor.edit(editBuilder => {
           editBuilder.delete(contentRange);
         });
@@ -118,9 +136,23 @@ export class BracketScopeFeature extends FeatureModule {
           // Ignore any errors in getting context
         }
         
-        // Highlight the content and ask for confirmation
-        if (await this.highlightAndConfirmBracketDeletion(editor, contentRange, `next bracket pair content${contextText}`, linesRemoved)) {
-          // Delete the content between the next bracket pair (excluding the brackets)
+        if (highlightBeforeDeleting) {
+          // Highlight the content and ask for confirmation
+          if (await this.highlightAndConfirmBracketDeletion(editor, contentRange, `next bracket pair content${contextText}`, linesRemoved)) {
+            // Delete the content between the next bracket pair (excluding the brackets)
+            await editor.edit(editBuilder => {
+              editBuilder.delete(contentRange);
+            });
+            
+            // Show detailed message with expanded information
+            const message = `Deleted content between next bracket pair${contextText}`;
+            const detailMessage = `From line ${nextBracketRange.openBracketLine + 1} to ${nextBracketRange.closeBracketLine + 1} (${linesRemoved} lines affected)`;
+            
+            // Use warning message type for a different icon
+            vscode.window.showWarningMessage(message, { detail: detailMessage, modal: false });
+          }
+        } else {
+          // Delete without highlighting
           await editor.edit(editBuilder => {
             editBuilder.delete(contentRange);
           });

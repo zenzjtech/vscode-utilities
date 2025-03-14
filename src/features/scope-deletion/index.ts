@@ -37,8 +37,17 @@ export class ScopeDeletionFeature extends FeatureModule {
     // First try to find if cursor is inside a function
     const containingFunction = this.findContainingFunction(document, position);
     if (containingFunction) {
-      // Highlight the function scope
-      if (await this.highlightAndConfirmDeletion(editor, containingFunction.startLine, 'Function')) {
+      // Check if highlighting is enabled in configuration
+      const config = vscode.workspace.getConfiguration('vscodeUtilities');
+      const highlightBeforeDeleting = config.get<boolean>('highlightBeforeDeleting', false);
+      
+      if (highlightBeforeDeleting) {
+        // Highlight the function scope and confirm
+        if (await this.highlightAndConfirmDeletion(editor, containingFunction.startLine, 'Function')) {
+          await this.deleteFunction(editor, edit, new vscode.Position(containingFunction.startLine, 0));
+        }
+      } else {
+        // Delete without highlighting
         await this.deleteFunction(editor, edit, new vscode.Position(containingFunction.startLine, 0));
       }
       return;
@@ -47,19 +56,38 @@ export class ScopeDeletionFeature extends FeatureModule {
     // Then check if cursor is inside a class, interface, or enum
     const containingClass = this.findContainingClass(document, position);
     if (containingClass) {
+      // Check if highlighting is enabled in configuration
+      const config = vscode.workspace.getConfiguration('vscodeUtilities');
+      const highlightBeforeDeleting = config.get<boolean>('highlightBeforeDeleting', false);
+      
       if (containingClass.scopeType === 'class') {
-        // Highlight the class scope
-        if (await this.highlightAndConfirmDeletion(editor, containingClass.startLine, 'Class')) {
+        if (highlightBeforeDeleting) {
+          // Highlight the class scope and confirm
+          if (await this.highlightAndConfirmDeletion(editor, containingClass.startLine, 'Class')) {
+            await this.deleteClass(editor, edit, new vscode.Position(containingClass.startLine, 0));
+          }
+        } else {
+          // Delete without highlighting
           await this.deleteClass(editor, edit, new vscode.Position(containingClass.startLine, 0));
         }
       } else if (containingClass.scopeType === 'interface') {
-        // Highlight the interface scope
-        if (await this.highlightAndConfirmDeletion(editor, containingClass.startLine, 'Interface')) {
+        if (highlightBeforeDeleting) {
+          // Highlight the interface scope and confirm
+          if (await this.highlightAndConfirmDeletion(editor, containingClass.startLine, 'Interface')) {
+            await this.deleteInterface(editor, edit, new vscode.Position(containingClass.startLine, 0));
+          }
+        } else {
+          // Delete without highlighting
           await this.deleteInterface(editor, edit, new vscode.Position(containingClass.startLine, 0));
         }
       } else if (containingClass.scopeType === 'enum') {
-        // Highlight the enum scope
-        if (await this.highlightAndConfirmDeletion(editor, containingClass.startLine, 'Enum')) {
+        if (highlightBeforeDeleting) {
+          // Highlight the enum scope and confirm
+          if (await this.highlightAndConfirmDeletion(editor, containingClass.startLine, 'Enum')) {
+            await this.deleteEnum(editor, edit, new vscode.Position(containingClass.startLine, 0));
+          }
+        } else {
+          // Delete without highlighting
           await this.deleteEnum(editor, edit, new vscode.Position(containingClass.startLine, 0));
         }
       }
