@@ -162,9 +162,23 @@ export class ScopeDeletionFeature extends FeatureModule {
         editBuilder.delete(range);
       });
       
-      vscode.window.showInformationMessage(
-        `${scopeType} '${scopeName}' deleted successfully! (${linesRemoved} lines removed)`
-      );
+      // Show detailed message with appropriate icon
+      const message = `${scopeType} '${scopeName}' deleted successfully!`;
+      const detailMessage = `Deleted ${linesRemoved} lines (from line ${scopeStartLine + 1} to line ${endLine + 1})`;
+      
+      // Use different message types based on the scope type to get different icons
+      if (scopeType.toLowerCase() === 'function') {
+        vscode.window.showInformationMessage(message, { detail: detailMessage, modal: false });
+      } else if (scopeType.toLowerCase() === 'class') {
+        // Using warning message type just to get a different icon
+        vscode.window.showWarningMessage(message, { detail: detailMessage, modal: false });
+      } else if (scopeType.toLowerCase() === 'interface') {
+        vscode.window.showInformationMessage(message, { detail: detailMessage, modal: false });
+      } else if (scopeType.toLowerCase() === 'enum') {
+        vscode.window.showInformationMessage(message, { detail: detailMessage, modal: false });
+      } else {
+        vscode.window.showInformationMessage(message, { detail: detailMessage, modal: false });
+      }
     } else {
       vscode.window.showErrorMessage(`Couldn't determine ${scopeType.toLowerCase()} boundaries.`);
     }

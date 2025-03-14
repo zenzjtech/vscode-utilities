@@ -85,9 +85,12 @@ export class BracketScopeFeature extends FeatureModule {
         editBuilder.delete(contentRange);
       });
       
-      vscode.window.showInformationMessage(
-        `Deleted content between brackets${contextText} (from line ${bracketRange.openBracketLine + 1} to ${bracketRange.closeBracketLine + 1}, ${linesRemoved} lines affected)`
-      );
+      // Show detailed message with expanded information
+      const message = `Deleted content between brackets${contextText}`;
+      const detailMessage = `From line ${bracketRange.openBracketLine + 1} to ${bracketRange.closeBracketLine + 1} (${linesRemoved} lines affected)`;
+      
+      // Use information message type with detail option for expanded view
+      vscode.window.showInformationMessage(message, { detail: detailMessage, modal: false });
     } else {
       // If no bracket pair contains the cursor, look for the next bracket pair
       const nextBracketRange = this.findNextBracketPair(document, cursorLine, cursorChar);
@@ -120,9 +123,12 @@ export class BracketScopeFeature extends FeatureModule {
           editBuilder.delete(contentRange);
         });
         
-        vscode.window.showInformationMessage(
-          `Deleted content between next bracket pair${contextText} (from line ${nextBracketRange.openBracketLine + 1} to ${nextBracketRange.closeBracketLine + 1}, ${linesRemoved} lines affected)`
-        );
+        // Show detailed message with expanded information
+        const message = `Deleted content between next bracket pair${contextText}`;
+        const detailMessage = `From line ${nextBracketRange.openBracketLine + 1} to ${nextBracketRange.closeBracketLine + 1} (${linesRemoved} lines affected)`;
+        
+        // Use warning message type for a different icon
+        vscode.window.showWarningMessage(message, { detail: detailMessage, modal: false });
       } else {
         vscode.window.showInformationMessage("No bracket scope found.");
       }
