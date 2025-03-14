@@ -265,6 +265,114 @@ handlers/
 └── index.ts                # Facade that maintains API compatibility
 ```
 
+##### Visual Representation
+
+###### Class Relationship Diagram
+
+```mermaid
+classDiagram
+    class BaseSexpHandler {
+        <<abstract>>
+        #findParentSexpression()
+        #isSmallerBoundary()
+        #getNavigator()
+        #...other utility methods()
+    }
+    
+    class SexpNavigationHandlers {
+        +handleForwardSexp()
+        +handleBackwardSexp()
+    }
+    
+    class SexpSelectionHandlers {
+        +handleMarkSexp()
+        +handleMarkParentSexp()
+    }
+    
+    class SexpTranspositionHandlers {
+        +handleTransposeSexp()
+        +handleMoveSexpUp()
+        +handleMoveSexpDown()
+    }
+    
+    class SexpHandlers {
+        -navigationHandlers: SexpNavigationHandlers
+        -selectionHandlers: SexpSelectionHandlers
+        -transpositionHandlers: SexpTranspositionHandlers
+        +handleForwardSexp()
+        +handleBackwardSexp()
+        +handleMarkSexp()
+        +handleMarkParentSexp()
+        +handleExpandSexpSelection()
+        +handleTransposeSexp()
+        +handleMoveSexpUp()
+        +handleMoveSexpDown()
+    }
+    
+    BaseSexpHandler <|-- SexpNavigationHandlers
+    BaseSexpHandler <|-- SexpSelectionHandlers
+    BaseSexpHandler <|-- SexpTranspositionHandlers
+    SexpHandlers o-- SexpNavigationHandlers
+    SexpHandlers o-- SexpSelectionHandlers
+    SexpHandlers o-- SexpTranspositionHandlers
+```
+
+###### Command Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant VSCode
+    participant Feature as SexpNavigationFeature
+    participant Facade as SexpHandlers (Facade)
+    participant Handler as Specialized Handler
+    participant Navigator as SexpNavigator
+    participant Editor as TextEditor
+    
+    VSCode->>Feature: Execute command
+    Feature->>Facade: handleCommand()
+    Facade->>Handler: handleCommand()
+    Handler->>Navigator: find expression boundaries
+    Navigator-->>Handler: expression boundaries
+    Handler->>Editor: modify selection/cursor
+    Handler-->>Facade: return result
+    Facade-->>Feature: return result
+    Feature-->>VSCode: command completed
+```
+
+###### Refactoring Transformation
+
+```mermaid
+flowchart TD
+    subgraph Before["Before Refactoring"]
+        A[Large handlers.ts File]
+        A1[Navigation Methods]
+        A2[Selection Methods]
+        A3[Transposition Methods]
+        A4[Utility Methods]
+        A -->|Contains| A1
+        A -->|Contains| A2
+        A -->|Contains| A3
+        A -->|Contains| A4
+    end
+    
+    subgraph After["After Refactoring"]
+        B[base-handler.ts]
+        C[navigation-handlers.ts]
+        D[selection-handlers.ts]
+        E[transposition-handlers.ts]
+        F[index.ts Facade]
+        
+        B -->|Inherited by| C
+        B -->|Inherited by| D
+        B -->|Inherited by| E
+        F -->|Delegates to| C
+        F -->|Delegates to| D
+        F -->|Delegates to| E
+    end
+    
+    Before -->|Refactored into| After
+```
+
 ##### Example Implementation:
 
 ```typescript
