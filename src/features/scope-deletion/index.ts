@@ -64,10 +64,14 @@ export class ScopeDeletionFeature extends FeatureModule {
         return;
       }
       
-      // Then check if cursor is inside a class
+      // Then check if cursor is inside a class or interface
       const containingClass = this.findContainingClass(document, position);
       if (containingClass) {
-        await this.deleteClass(editor, edit, new vscode.Position(containingClass.startLine, 0));
+        if (containingClass.scopeType === 'class') {
+          await this.deleteClass(editor, edit, new vscode.Position(containingClass.startLine, 0));
+        } else if (containingClass.scopeType === 'interface') {
+          await this.deleteInterface(editor, edit, new vscode.Position(containingClass.startLine, 0));
+        }
         return;
       }
       
@@ -181,6 +185,59 @@ export class ScopeDeletionFeature extends FeatureModule {
     }
   }
 
+  /**
+   * Delete an interface
+   * @param editor The active text editor
+   * @param edit The editor edit object
+   * @param position Position where the interface starts
+   */
+  private async deleteInterface(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, position: vscode.Position): Promise<void> {
+    const document = editor.document;
+    const line_number = position.line;
+    const line_text = document.lineAt(line_number).text;
+    
+    let interface_start_line = line_number;
+    let interface_end_line = -1;
+    let bracket_count = 0;
+    let found_opening_bracket = false;
+    
+    // Find opening and closing brackets
+    for (let i = interface_start_line; i < document.lineCount; i++) {
+      const current_line = document.lineAt(i).text;
+      
+      if (current_line.includes('{')) {
+        found_opening_bracket = true;
+        bracket_count++;
+      }
+      
+      if (found_opening_bracket && current_line.includes('}')) {
+        bracket_count--;
+        
+        if (bracket_count === 0) {
+          interface_end_line = i;
+          break;
+        }
+      }
+    }
+    
+    if (interface_end_line !== -1) {
+      // Create a range from the interface start to end
+      const range = new vscode.Range(
+        new vscode.Position(interface_start_line, 0),
+        new vscode.Position(interface_end_line, document.lineAt(interface_end_line).text.length)
+      );
+      
+      // Delete the interface
+      await editor.edit(editBuilder => {
+        editBuilder.delete(range);
+      });
+      
+      vscode.window.showInformationMessage("Interface deleted successfully!");
+    } else {
+      vscode.window.showErrorMessage("Couldn't determine interface boundaries.");
+    }
+  }
+
   // Helper utility to get indentation level
   private getIndentation(line: string): string {
     return line.match(/^(\s*)/)![1];
@@ -244,18 +301,50 @@ export class ScopeDeletionFeature extends FeatureModule {
   }
 
   /**
-   * Find a class that contains the given position
+   * Find a class or interface that contains the given position
    * @param document The text document
    * @param position The position to check
-   * @returns An object with startLine property if found, or null if not found
+   * @returns An object with startLine and scopeType properties if found, or null if not found
    */
-  private findContainingClass(document: vscode.TextDocument, position: vscode.Position): { startLine: number } | null {
+  private findContainingClass(document: vscode.TextDocument, position: vscode.Position): { startLine: number, scopeType: 'class' | 'interface' } | null {
     const maxLines = document.lineCount;
     const currentLine = position.line;
     
-    // Search upward for class definition
+    // Search upward for class or interface definition
     for (let line = currentLine; line >= 0; line--) {
       const lineText = document.lineAt(line).text.trim();
+      
+      // Check for interface definition
+      if (/^(export\s+)?(declare\s+)?interface\s+\w+/.test(lineText)) {
+        // Verify if this interface contains the current position
+        let bracketCount = 0;
+        let foundOpeningBracket = false;
+        
+        for (let i = line; i < maxLines; i++) {
+          const bracketLine = document.lineAt(i).text;
+          
+          // Count brackets
+          for (let char = 0; char < bracketLine.length; char++) {
+            if (bracketLine[char] === '{') {
+              foundOpeningBracket = true;
+              bracketCount++;
+            } else if (bracketLine[char] === '}') {
+              bracketCount--;
+              
+              // If brackets are balanced and we found the closing bracket
+              if (foundOpeningBracket && bracketCount === 0) {
+                // Check if current position is within this range
+                if (i >= currentLine) {
+                  return { startLine: line, scopeType: 'interface' };
+                } else {
+                  // This interface ends before our position, so it doesn't contain it
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
       
       // Check for class definition - improved to handle TypeScript decorators and export patterns
       if (/^(export\s+)?(abstract\s+)?(class)\s+\w+/.test(lineText) || 
@@ -280,7 +369,7 @@ export class ScopeDeletionFeature extends FeatureModule {
               if (foundOpeningBracket && bracketCount === 0) {
                 // Check if current position is within this range
                 if (i >= currentLine) {
-                  return { startLine: line };
+                  return { startLine: line, scopeType: 'class' };
                 } else {
                   // This class ends before our position, so it doesn't contain it
                   break;
