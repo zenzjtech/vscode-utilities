@@ -83,6 +83,16 @@ Provides Emacs-like navigation, selection, and manipulation of balanced expressi
 | `handlers/transposition-handlers.ts` | Handlers for transposing and rearranging expressions |
 | `handlers.ts` | Original handler file (deprecated, maintained for reference) |
 
+#### Scope Navigation Feature (`src/features/scope-navigation/`)
+
+Provides navigation between code scopes like functions and classes in the document.
+
+| File | Description |
+|------|-------------|
+| `index.ts` | Feature entry point, registers navigation commands |
+| `types.ts` | Defines interfaces for navigation results and direction enum |
+| `handlers.ts` | Contains command handlers for navigating between different scopes |
+
 ### 🚪 Extension Entry Point (`src/extension.ts`)
 
 The main entry point for the extension, responsible for:
@@ -130,6 +140,12 @@ The following components have been recently refactored to improve modularity and
    - Specialized handlers for navigation, selection, and transposition
    - Used facade pattern to maintain backward compatibility
    - Improved code organization and maintainability
+
+4. **Scope Navigation Feature**
+   - Implemented new feature for navigating between function and class declarations
+   - Leverages existing scope detection logic from scope deletion feature
+   - Provides bidirectional navigation with support for wrap-around behavior
+   - Keyboard shortcuts for quick navigation between code structures
 
 ## 🚀 Future Structure Additions
 

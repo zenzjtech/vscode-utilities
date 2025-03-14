@@ -70,6 +70,18 @@ src/
 │   │   └── finders/             # Language-specific finders
 │   │       ├── index.ts         # Factory for language finders
 │   │       └── curly-bracket-finder.ts # Curly bracket implementation
+│   ├── sexp-navigation/         # S-expression navigation feature
+│   │   ├── index.ts             # Feature entry point
+│   │   ├── types.ts             # Common interfaces and types
+│   │   ├── ui-utils.ts          # UI-related utilities
+│   │   ├── handlers.ts          # Command handlers
+│   │   └── finders/             # Language-specific finders
+│   │       ├── index.ts         # Factory for language finders
+│   │       └── typescript-navigator.ts # TypeScript implementation
+│   ├── scope-navigation/        # Scope navigation feature
+│   │   ├── index.ts             # Feature entry point
+│   │   ├── types.ts             # Navigation result and direction types
+│   │   └── handlers.ts          # Command handlers for scope navigation
 │   └── [future-features]/       # Structure for new features
 └── utils/
     ├── document-utils.ts        # Document helper functions
@@ -193,6 +205,73 @@ The scope-deletion and bracket-scope features now follow a consistent internal s
    export * from './ui-utils';
    ```
 
+#### Scope Navigation Feature Structure
+
+The scope navigation feature follows a simplified architecture pattern that leverages the existing scope-detection infrastructure:
+
+1. **Types**: Basic types for navigation results and direction
+   ```typescript
+   // features/scope-navigation/types.ts
+   export interface ScopeNavigationResult {
+     success: boolean;
+     message: string;
+     targetPosition?: vscode.Position;
+     targetScopeInfo?: ScopeInfo;
+   }
+   
+   export enum NavigationDirection {
+     Forward = 'forward',
+     Backward = 'backward'
+   }
+   ```
+
+2. **Handlers**: Specialized handlers for function and class navigation
+   ```typescript
+   // features/scope-navigation/handlers.ts
+   export class ScopeNavigationHandlers {
+     public async handleNextFunction(editor: vscode.TextEditor, edit: vscode.TextEditorEdit): Promise<void> {
+       // Implementation for navigating to next function
+     }
+     
+     public async handlePreviousFunction(editor: vscode.TextEditor, edit: vscode.TextEditorEdit): Promise<void> {
+       // Implementation for navigating to previous function
+     }
+     
+     public async handleNextClass(editor: vscode.TextEditor, edit: vscode.TextEditorEdit): Promise<void> {
+       // Implementation for navigating to next class
+     }
+     
+     public async handlePreviousClass(editor: vscode.TextEditor, edit: vscode.TextEditorEdit): Promise<void> {
+       // Implementation for navigating to previous class
+     }
+     
+     // Additional methods for general scope navigation and internal implementation
+   }
+   ```
+
+3. **Feature Entry Point**: Registers commands for navigation operations
+   ```typescript
+   // features/scope-navigation/index.ts
+   export class ScopeNavigationFeature extends FeatureModule {
+     private handlers: ScopeNavigationHandlers;
+     
+     constructor(commandRegistry: CommandRegistry) {
+       super(commandRegistry, 'Scope Navigation');
+       this.handlers = new ScopeNavigationHandlers();
+     }
+     
+     register(): void {
+       // Register navigation commands
+       this.commandRegistry.registerTextEditorCommand(
+         'extension.nextFunction',
+         this.handlers.handleNextFunction.bind(this.handlers)
+       );
+       
+       // Additional command registrations...
+     }
+   }
+   ```
+
 #### Language Provider Interface
 ```typescript
 // core/language-provider.ts
@@ -200,27 +279,13 @@ export interface LanguageProvider {
   id: string;
   supportedVersions: string[];
   
-  // Feature-specific methods
-  findFunction(document: vscode.TextDocument, position: vscode.Position): CodeRange | null;
-  findClass(document: vscode.TextDocument, position: vscode.Position): CodeRange | null;
-  findBracketScope(document: vscode.TextDocument, position: vscode.Position): CodeRange | null;
+  // Language-specific capabilities
+  canFindScopeBoundaries(): boolean;
+  canDetectExpressionTypes(): boolean;
   
-  // Generic language capabilities
-  supportsClassDeclarations: boolean;
-  supportsArrowFunctions: boolean;
-  // ... other capabilities
-}
-```
-
-#### Feature Module Base Class
-```typescript
-// core/feature-module.ts
-export abstract class FeatureModule {
-  constructor(protected commandRegistry: CommandRegistry) {}
-  
-  abstract register(): void;
-  abstract activate(): void;
-  abstract deactivate(): void;
+  // Implementation methods
+  findScope(document: vscode.TextDocument, position: vscode.Position, scopeType: string): any;
+  findExpressionBoundaries(document: vscode.TextDocument, position: vscode.Position): any;
 }
 ```
 
@@ -230,14 +295,16 @@ export abstract class FeatureModule {
 export class CommandRegistry {
   private commands: Map<string, vscode.Disposable> = new Map();
   
-  register(id: string, command: (...args: any[]) => any): void {
+  register(id: string, command: (...args: any[]) => any): vscode.Disposable {
     const disposable = vscode.commands.registerCommand(id, command);
     this.commands.set(id, disposable);
+    return disposable;
   }
   
-  registerTextEditorCommand(id: string, command: (editor: vscode.TextEditor, edit: vscode.TextEditorEdit, ...args: any[]) => any): void {
+  registerTextEditorCommand(id: string, command: (editor: vscode.TextEditor, edit: vscode.TextEditorEdit, ...args: any[]) => any): vscode.Disposable {
     const disposable = vscode.commands.registerTextEditorCommand(id, command);
     this.commands.set(id, disposable);
+    return disposable;
   }
   
   getDisposables(): vscode.Disposable[] {
@@ -246,307 +313,95 @@ export class CommandRegistry {
 }
 ```
 
-### 4. Refactoring Patterns 🔄
-
-#### A. Handler Specialization Pattern 🧩
-
-As features grow in complexity, handler files can become large and difficult to maintain. The Handler Specialization Pattern splits large handler files into smaller, specialized modules based on functionality:
-
-1. **Base Handler**: Create a base abstract class with common utility methods
-2. **Specialized Handlers**: Create specialized handler classes for different operation types
-3. **Facade Handler**: Use a facade pattern to maintain backward compatibility
-
-```
-handlers/
-├── base-handler.ts         # Abstract base class with shared utility methods
-├── navigation-handlers.ts  # Specific operation type handlers
-├── selection-handlers.ts   # Specific operation type handlers
-├── transposition-handlers.ts # Specific operation type handlers
-└── index.ts                # Facade that maintains API compatibility
-```
-
-##### Visual Representation
-
-###### Class Relationship Diagram
-
-```mermaid
-classDiagram
-    class BaseSexpHandler {
-        <<abstract>>
-        #findParentSexpression()
-        #isSmallerBoundary()
-        #getNavigator()
-        #...other utility methods()
-    }
-    
-    class SexpNavigationHandlers {
-        +handleForwardSexp()
-        +handleBackwardSexp()
-    }
-    
-    class SexpSelectionHandlers {
-        +handleMarkSexp()
-        +handleMarkParentSexp()
-    }
-    
-    class SexpTranspositionHandlers {
-        +handleTransposeSexp()
-        +handleMoveSexpUp()
-        +handleMoveSexpDown()
-    }
-    
-    class SexpHandlers {
-        -navigationHandlers: SexpNavigationHandlers
-        -selectionHandlers: SexpSelectionHandlers
-        -transpositionHandlers: SexpTranspositionHandlers
-        +handleForwardSexp()
-        +handleBackwardSexp()
-        +handleMarkSexp()
-        +handleMarkParentSexp()
-        +handleExpandSexpSelection()
-        +handleTransposeSexp()
-        +handleMoveSexpUp()
-        +handleMoveSexpDown()
-    }
-    
-    BaseSexpHandler <|-- SexpNavigationHandlers
-    BaseSexpHandler <|-- SexpSelectionHandlers
-    BaseSexpHandler <|-- SexpTranspositionHandlers
-    SexpHandlers o-- SexpNavigationHandlers
-    SexpHandlers o-- SexpSelectionHandlers
-    SexpHandlers o-- SexpTranspositionHandlers
-```
-
-###### Command Flow Diagram
-
-```mermaid
-sequenceDiagram
-    participant VSCode
-    participant Feature as SexpNavigationFeature
-    participant Facade as SexpHandlers (Facade)
-    participant Handler as Specialized Handler
-    participant Navigator as SexpNavigator
-    participant Editor as TextEditor
-    
-    VSCode->>Feature: Execute command
-    Feature->>Facade: handleCommand()
-    Facade->>Handler: handleCommand()
-    Handler->>Navigator: find expression boundaries
-    Navigator-->>Handler: expression boundaries
-    Handler->>Editor: modify selection/cursor
-    Handler-->>Facade: return result
-    Facade-->>Feature: return result
-    Feature-->>VSCode: command completed
-```
-
-###### Refactoring Transformation
-
-```mermaid
-flowchart TD
-    subgraph Before["Before Refactoring"]
-        A[Large handlers.ts File]
-        A1[Navigation Methods]
-        A2[Selection Methods]
-        A3[Transposition Methods]
-        A4[Utility Methods]
-        A -->|Contains| A1
-        A -->|Contains| A2
-        A -->|Contains| A3
-        A -->|Contains| A4
-    end
-    
-    subgraph After["After Refactoring"]
-        B[base-handler.ts]
-        C[navigation-handlers.ts]
-        D[selection-handlers.ts]
-        E[transposition-handlers.ts]
-        F[index.ts Facade]
-        
-        B -->|Inherited by| C
-        B -->|Inherited by| D
-        B -->|Inherited by| E
-        F -->|Delegates to| C
-        F -->|Delegates to| D
-        F -->|Delegates to| E
-    end
-    
-    Before -->|Refactored into| After
-```
-
-##### Example Implementation:
-
+#### Feature Module Base Class
 ```typescript
-// Base abstract class with shared methods
-// handlers/base-handler.ts
-export abstract class BaseSexpHandler {
-  // Common utility methods used across handlers
-  protected findParentSexpression(...) { /* implementation */ }
-  protected isSmallerBoundary(...) { /* implementation */ }
-  // Other utility methods...
-}
-
-// Specialized handlers for specific operations
-// handlers/navigation-handlers.ts
-export class SexpNavigationHandlers extends BaseSexpHandler {
-  public async handleForwardSexp(...) { /* implementation */ }
-  public async handleBackwardSexp(...) { /* implementation */ }
-}
-
-// handlers/selection-handlers.ts
-export class SexpSelectionHandlers extends BaseSexpHandler {
-  public async handleMarkSexp(...) { /* implementation */ }
-  public async handleMarkParentSexp(...) { /* implementation */ }
-  // Other selection methods...
-}
-
-// handlers/index.ts - Facade pattern
-export class SexpHandlers {
-  private navigationHandlers = new SexpNavigationHandlers();
-  private selectionHandlers = new SexpSelectionHandlers();
+// core/feature-module.ts
+export abstract class FeatureModule {
+  protected commandRegistry: CommandRegistry;
+  private disposables: vscode.Disposable[] = [];
+  private isActive: boolean = false;
+  private name: string;
   
-  // Public API maintains the same interface
-  public async handleForwardSexp(...) {
-    return this.navigationHandlers.handleForwardSexp(...);
+  constructor(commandRegistry: CommandRegistry, name: string) {
+    this.commandRegistry = commandRegistry;
+    this.name = name;
   }
   
-  public async handleMarkSexp(...) {
-    return this.selectionHandlers.handleMarkSexp(...);
-  }
-  // Other methods...
-}
-
-// For backward compatibility
-export { SexpHandlers as SexpNavigationHandlers };
-```
-
-##### Benefits:
-
-1. **🔍 Improved Focus**: Each handler class has a single responsibility
-2. **🧰 Better Maintainability**: Smaller files are easier to understand and modify
-3. **👥 Team Collaboration**: Different developers can work on different handler types
-4. **🧪 Testability**: Specialized handlers are easier to test in isolation
-5. **♻️ Code Reuse**: Base handler provides common functionality to all specialized handlers
-6. **🔄 Backward Compatibility**: Facade pattern preserves the public API
-
-##### When to Apply:
-
-* When a single handler file exceeds 300-500 lines
-* When a handler implements multiple distinct operation types
-* When there's significant duplication between different handler methods
-* When different parts of the handler file change at different rates
-
-##### Real-World Example:
-
-The S-expression navigation feature was refactored using this pattern, splitting the original 600+ line handler file into specialized modules for navigation, selection, and transposition operations while maintaining the same public API.
-
-#### B. Feature Module Pattern 🧰
-
-{{ ... }}
-
-### 5. Dependency Injection 💉
-
-```typescript
-// core/container.ts
-export class ServiceContainer {
-  private services: Map<string, any> = new Map();
-  
-  register<T>(id: string, instance: T): void {
-    this.services.set(id, instance);
+  getName(): string {
+    return this.name;
   }
   
-  get<T>(id: string): T {
-    return this.services.get(id) as T;
+  abstract register(): void;
+  
+  activate(): void {
+    this.isActive = true;
   }
-}
-
-export const container = new ServiceContainer();
-```
-
-### 6. Extension Entry Point 🚪
-
-```typescript
-// extension.ts
-export function activate(context: vscode.ExtensionContext) {
-  // Set up core services
-  const commandRegistry = new CommandRegistry();
-  container.register('commandRegistry', commandRegistry);
   
-  const languageDetector = new LanguageDetector();
-  container.register('languageDetector', languageDetector);
+  deactivate(): void {
+    this.isActive = false;
+  }
   
-  // Register language providers
-  languageDetector.registerProvider(new TypeScriptProvider());
-  languageDetector.registerProvider(new JavaScriptProvider());
-  languageDetector.registerProvider(new PythonProvider());
-  // Add more language providers here
+  dispose(): void {
+    this.disposables.forEach(d => d.dispose());
+    this.disposables = [];
+  }
   
-  // Activate features
-  const features: FeatureModule[] = [
-    new ScopeDeletionFeature(commandRegistry),
-    new BracketScopeFeature(commandRegistry),
-    // Add more features here
-  ];
-  
-  features.forEach(feature => {
-    feature.register();
-    feature.activate();
-    context.subscriptions.push({
-      dispose: () => feature.deactivate()
-    });
-  });
-  
-  // Register all commands with context
-  context.subscriptions.push(...commandRegistry.getDisposables());
+  protected addDisposable(disposable: vscode.Disposable): void {
+    this.disposables.push(disposable);
+  }
 }
 ```
 
-## 📈 Roadmap & Implementation Strategy
+### 4. Key Dependencies and Integration Points
 
-### Phase 1: Refactoring for Modularity
+#### Feature Integration
+- **Integration Point 1**: Feature modules register commands with the command registry
+- **Integration Point 2**: Feature modules use language providers or finders to support multiple languages
+- **Integration Point 3**: Features can reuse utilities and finders from other features as needed (e.g., scope navigation uses scope deletion's finders)
 
-- ✅ Extract feature modules into their own directories
-- ✅ Implement base classes and interfaces for features
-- ✅ Refactor bracket-scope feature to new architecture
-- ✅ Refactor scope-deletion feature to new architecture
+#### VSCode API Integration
+- **Integration Point 4**: Command registry wraps VSCode's command registration system
+- **Integration Point 5**: UI utilities use VSCode's window, editor, and decoration API
+- **Integration Point 6**: Feature modules access editor state via VSCode's editor API
 
-### Phase 2: Language Provider System
+### 5. Class Relationships and Interactions
 
-- 🔄 Define language provider interface
-- 🔄 Implement TypeScript/JavaScript providers
-- 🔄 Create language detection service
-- 🔄 Update features to use language providers
+#### Feature Module Relationships
+- **FeatureModule** is the base class for all feature modules
+- Each feature module (e.g., ScopeDeletionFeature) extends FeatureModule
+- Feature modules own their respective handlers and interact with finder factories
 
-### Phase 3: Additional Language Support
+#### Factory Pattern Relationships
+- Each feature has its own factory for managing language-specific implementations
+- Factories create and return appropriate implementations based on language ID
+- Factories register implementations at initialization
 
-- ✅ Implement Python provider
-- 🕒 Implement Java provider
-- 🕒 Implement C# provider
-- 🕒 Add tests for language-specific features
+#### Handler Relationships
+- Handlers implement command functionality
+- Handlers use finders to locate code structures
+- Handlers use UI utilities for user interaction
 
-### Phase 4: Advanced Features & Optimization
+### 6. Architecture Evolution Plan
 
-- 🕒 Add scope visualization feature
-- 🕒 Implement scope insertion commands
-- 🕒 Performance optimization for large files
-- 🕒 User-configurable language settings
-
-## 📊 Implementation Priority
-
-| Priority | Task | Importance | Difficulty |
-|----------|------|------------|------------|
-| **1** | Refactor existing code | High | Medium |
-|       | • Separate language-specific logic from operations | | |
-|       | • Create TypeScript and JavaScript providers | | |
-|       | • Move utility functions to appropriate modules | | |
+| **Phase** | **Focus Area** | **Complexity** | **Priority** |
+|-----------|----------------|----------------|--------------|
+| **1** | Modularize existing features | Medium | High |
+|       | • Refactor monolithic functions into modules | | |
+|       | • Create common interfaces for each feature | | |
+|       | • Implement basic command registry | | |
 | **2** | Create core infrastructure | High | High |
 |       | • Implement command registry | | |
 |       | • Create feature module base class | | |
 |       | • Design language provider interface | | |
 | **3** | Add support for more languages | Medium | Medium |
-|       | • ✅ Python | | |
-|       | • Java | | |
-|       | • C# | | |
-| **4** | Implement advanced features | Low | High |
-|       | • Scope visualization | | |
-|       | • Custom scope rules | | |
-|       | • Performance optimizations | | |
+|       | • Implement language detectors | | |
+|       | • Create Python-specific finders | | |
+|       | • Create fallback finders for unsupported languages | | |
+| **4** | Enhance UI and feedback | Medium | Low |
+|       | • Improve visual feedback for operations | | |
+|       | • Create consistent UI interaction patterns | | |
+|       | • Add more configuration options | | |
+| **5** | Additional features | High | Medium |
+|       | • Add scope navigation | | |
+|       | • Implement scope visualization | | |
+|       | • Add more S-expression operations | | |

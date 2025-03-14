@@ -42,6 +42,24 @@ The enhanced visual feedback system provides:
 - Temporary status bar and notification messages with navigation details
 - Customizable animation duration and visual effects
 
+### 🧩 Scope Navigation
+
+The extension provides convenient commands to navigate between code structures in your document:
+
+#### Function Navigation
+- **Next Function**: Jump to the next function declaration in the document (`alt+down`)
+- **Previous Function**: Jump to the previous function declaration in the document (`alt+up`)
+
+#### Class Navigation
+- **Next Class**: Jump to the next class declaration in the document (`alt+shift+down`)
+- **Previous Class**: Jump to the previous class declaration in the document (`alt+shift+up`)
+
+#### General Scope Navigation
+- **Next Scope**: Jump to the next function or class declaration in the document (`alt+right`)
+- **Previous Scope**: Jump to the previous function or class declaration in the document (`alt+left`)
+
+These navigation features help you quickly move between important code structures without having to manually search or scroll through the document. When reaching the beginning or end of the document, navigation can optionally wrap around to the other end.
+
 ### 📊 Status Bar Scope Indicator
 
 The extension adds a status bar indicator that shows:
@@ -79,6 +97,12 @@ The extension intelligently:
 | `transposeSexp` | Current and next S-expression | Everything | Swap S-expressions |
 | `moveSexpUp` | Current S-expression | Everything | Move S-expression up in a list |
 | `moveSexpDown` | Current S-expression | Everything | Move S-expression down in a list |
+| `nextFunction` | Next function declaration | Everything | Navigate to next function |
+| `previousFunction` | Previous function declaration | Everything | Navigate to previous function |
+| `nextClass` | Next class declaration | Everything | Navigate to next class |
+| `previousClass` | Previous class declaration | Everything | Navigate to previous class |
+| `nextScope` | Next function or class declaration | Everything | Navigate to next code structure |
+| `previousScope` | Previous function or class declaration | Everything | Navigate to previous code structure |
 
 ### 🧩 Supported Languages
 
@@ -121,6 +145,18 @@ flowchart TD
     U --> X[Update Code]
     V --> X
     W --> X
+    
+    Y[Position Cursor] --> Z[Scope Navigation]
+    Z -->|Next Function| AA[Find Next Function]
+    Z -->|Previous Function| AB[Find Previous Function]
+    Z -->|Next Class| AC[Find Next Class]
+    Z -->|Previous Class| AD[Find Previous Class]
+    Z -->|Any Scope| AE[Find Next/Previous Scope]
+    AA --> AF[Move Cursor to Target]
+    AB --> AF
+    AC --> AF
+    AD --> AF
+    AE --> AF
 ```
 
 ## 🚀 Usage
@@ -140,6 +176,12 @@ flowchart TD
    - `Extension: Transpose S-expressions`
    - `Extension: Move S-expression Up`
    - `Extension: Move S-expression Down`
+   - `Extension: Navigate to Next Function`
+   - `Extension: Navigate to Previous Function`
+   - `Extension: Navigate to Next Class`
+   - `Extension: Navigate to Previous Class`
+   - `Extension: Navigate to Next Scope (Function or Class)`
+   - `Extension: Navigate to Previous Scope (Function or Class)`
 
 4. Alternatively, use the status bar indicator to:
    - View your current scope context
@@ -202,26 +244,46 @@ For faster access, the extension provides the following keyboard shortcuts:
   "when": "editorTextFocus"
 },
 {
-  "key": "ctrl+alt+u",
+  "key": "ctrl+alt+up",
   "command": "extension.moveSexpUp",
   "when": "editorTextFocus"
 },
 {
-  "key": "ctrl+alt+d",
+  "key": "ctrl+alt+down",
   "command": "extension.moveSexpDown",
+  "when": "editorTextFocus"
+},
+{
+  "key": "alt+down",
+  "command": "extension.nextFunction",
+  "when": "editorTextFocus"
+},
+{
+  "key": "alt+up",
+  "command": "extension.previousFunction",
+  "when": "editorTextFocus"
+},
+{
+  "key": "alt+shift+down",
+  "command": "extension.nextClass",
+  "when": "editorTextFocus"
+},
+{
+  "key": "alt+shift+up",
+  "command": "extension.previousClass",
+  "when": "editorTextFocus"
+},
+{
+  "key": "alt+right",
+  "command": "extension.nextScope",
+  "when": "editorTextFocus"
+},
+{
+  "key": "alt+left",
+  "command": "extension.previousScope",
   "when": "editorTextFocus"
 }
 ```
-
-The S-expression navigation commands use the familiar Emacs keybindings:
-- `Ctrl+Alt+F` - Forward S-expression
-- `Ctrl+Alt+B` - Backward S-expression
-- `Ctrl+Alt+M` - Mark S-expression
-- `Ctrl+Alt+P` - Mark Parent S-expression
-- `Ctrl+Alt+E` - Expand Selection to Parent S-expression
-- `Ctrl+Alt+T` - Transpose S-expressions
-- `Ctrl+Alt+U` - Move S-expression Up
-- `Ctrl+Alt+D` - Move S-expression Down
 
 ## 📋 Requirements
 

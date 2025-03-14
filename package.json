@@ -70,6 +70,30 @@
       {
         "command": "extension.moveSexpDown",
         "title": "Move S-expression Down (Swap with Next)"
+      },
+      {
+        "command": "extension.nextFunction",
+        "title": "Navigate to Next Function"
+      },
+      {
+        "command": "extension.previousFunction",
+        "title": "Navigate to Previous Function"
+      },
+      {
+        "command": "extension.nextClass",
+        "title": "Navigate to Next Class"
+      },
+      {
+        "command": "extension.previousClass",
+        "title": "Navigate to Previous Class"
+      },
+      {
+        "command": "extension.nextScope",
+        "title": "Navigate to Next Scope (Function or Class)"
+      },
+      {
+        "command": "extension.previousScope",
+        "title": "Navigate to Previous Scope (Function or Class)"
       }
     ],
     "keybindings": [
@@ -132,6 +156,36 @@
         "command": "extension.moveSexpDown",
         "key": "ctrl+alt+down",
         "when": "editorTextFocus"
+      },
+      {
+        "command": "extension.nextFunction",
+        "key": "alt+down",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "extension.previousFunction",
+        "key": "alt+up",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "extension.nextClass",
+        "key": "alt+shift+down",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "extension.previousClass",
+        "key": "alt+shift+up",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "extension.nextScope",
+        "key": "alt+right",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "extension.previousScope",
+        "key": "alt+left",
+        "when": "editorTextFocus"
       }
     ],
     "configuration": {
@@ -167,6 +221,12 @@
           "type": "boolean",
           "default": true,
           "description": "Whether to show the expression type (e.g., array, object, function call) in the status bar during navigation",
+          "scope": "window"
+        },
+        "scopeNavigation.wrapAround": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to wrap around to the beginning/end of the file when navigating past the last/first scope",
           "scope": "window"
         }
       }

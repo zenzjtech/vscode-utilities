@@ -5,3 +5,4 @@
 export * from './scope-deletion';
 export * from './bracket-scope';
 export * from './sexp-navigation';
+export * from './scope-navigation';
