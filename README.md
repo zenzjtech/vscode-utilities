@@ -1,61 +1,105 @@
-# UI Enhancer for VS Code
+# 🛠️ VSCode Utilities
 
-A Visual Studio Code extension that enhances the user interface with sleek customizations.
+A Visual Studio Code extension that provides helpful utilities for code manipulation and editing.
 
-## Features
+## ✨ Features
 
-### Enhanced Scrollbars
+### 🗑️ Delete Current Scope
 
-This extension provides customized scrollbars that are:
-- **Thinner** (50% of default width)
-- **Rounded corners** for a modern look
-- Maintains VS Code's native coloring for consistency
+This extension provides commands to quickly delete code scopes:
 
-![Enhanced Scrollbars](images/scrollbar-comparison.png)
+- **Delete Current Function/Method/Class**: Delete the entire function, method or class that your cursor is currently in or on
+- **Delete Current Bracket Scope**: Delete the content between the nearest curly brackets (preserving the brackets themselves)
 
-## Installation
+These features help you quickly clean up or refactor your code without having to manually select large blocks of text.
 
-1. Install this extension from the VS Code Marketplace
-2. Install the "Custom CSS and JS Loader" extension (by be5invis)
-3. Configure the custom CSS loader as described below
+## 🔄 How It Works
 
-## Configuration
+The extension intelligently:
+- 🔍 Detects when your cursor is on a function/method/class definition
+- 📍 Detects when your cursor is inside a function/method/class body
+- 🔎 Identifies the complete scope of the code block
+- ✂️ Provides precise deletion of just the content you want to remove
 
-After installing this extension, you need to:
+### Command Comparison
 
-1. Run the command `UI Enhancer: Apply Thin Rounded Scrollbars` from the Command Palette (Ctrl+Shift+P or Cmd+Shift+P)
-2. Follow the prompts to install the "Custom CSS and JS Loader" extension if you haven't already
-3. Click "Show Configuration" to see the required settings
-4. Add the provided CSS path to your settings.json under the `vscode_custom_css.imports` setting
-5. Run the "Reload Custom CSS and JS" command and restart VS Code when prompted
+| Command | Target | Preserves | Use Case |
+|---------|--------|-----------|----------|
+| `deleteCurrentScope` | Functions, Methods, Classes | Nothing | Complete removal of code units |
+| `deleteCurrentBracketScope` | Content between `{ }` | Bracket pair | Clearing implementation while keeping structure |
 
-## Toggle On/Off
+### 🧩 Supported Languages
 
-You can toggle the enhanced scrollbars on and off at any time:
+These utilities work best with:
+- JavaScript
+- TypeScript
 
-1. Open the Command Palette (Ctrl+Shift+P or Cmd+Shift+P)
-2. Run the command `UI Enhancer: Apply Thin Rounded Scrollbars` again to toggle the feature
+However, basic functionality should work in most languages that use curly braces for code blocks.
 
-## Requirements
+## 📊 Extension Workflow
+
+```mermaid
+flowchart TD
+    A[Position Cursor] --> B{On Definition Line?}
+    B -->|Yes| C[Detect Function/Class]
+    B -->|No| D{Inside Code Scope?}
+    D -->|Yes| E[Find Containing Scope]
+    D -->|No| F[No Action]
+    C --> G[Delete Complete Scope]
+    E --> G
+    
+    H[Position Cursor] --> I{Near Brackets?}
+    I -->|Yes| J[Find Bracket Pair]
+    I -->|No| K[Try Next Bracket Pair]
+    J --> L[Delete Content Between Brackets]
+    K --> L
+```
+
+## 🚀 Usage
+
+1. Position your cursor on or within a function, method or class
+2. Open the Command Palette (Ctrl+Shift+P or Cmd+Shift+P)
+3. Run one of the following commands:
+   - `Extension: Delete Current Scope`
+   - `Extension: Delete Current Bracket Scope`
+
+## ⌨️ Keyboard Shortcuts
+
+For faster access, you can set up keyboard shortcuts for these commands:
+
+```json
+{
+  "key": "ctrl+alt+d",
+  "command": "extension.deleteCurrentScope",
+  "when": "editorTextFocus"
+},
+{
+  "key": "ctrl+alt+b",
+  "command": "extension.deleteCurrentBracketScope",
+  "when": "editorTextFocus"
+}
+```
+
+## 📋 Requirements
 
 - Visual Studio Code v1.54.0 or higher
-- "Custom CSS and JS Loader" extension (be5invis.vscode-custom-css)
 
-## Extension Settings
+## ⚙️ Extension Settings
 
-This extension doesn't add any direct settings to VS Code. Instead, it works with the "Custom CSS and JS Loader" extension to apply the UI enhancements.
+This extension doesn't add any specific settings to VS Code.
 
-## Known Issues
+## ⚠️ Known Issues
 
-- The extension requires a separate "Custom CSS and JS Loader" extension due to VS Code's limitations on directly modifying the UI
-- On some platforms, administrative privileges may be required for the Custom CSS Loader to function
+- In some complex code structures, scope detection might not work perfectly
+- Detection works best with well-formatted code
 
-## Release Notes
+## 📝 Release Notes
 
 ### 0.0.1
 
 - Initial release
-- Added thin (50%) scrollbars with rounded corners
+- Added commands for deleting functions, methods, and classes
+- Added command for deleting content within bracket scopes
 
 ---
 
