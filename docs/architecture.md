@@ -60,7 +60,8 @@ src/
 │   │   ├── handlers.ts          # Command handlers
 │   │   └── finders/             # Language-specific finders
 │   │       ├── index.ts         # Factory for language finders
-│   │       └── typescript-finder.ts # TypeScript implementation
+│   │       ├── typescript-finder.ts # TypeScript implementation
+│   │       └── python-finder.ts # Python implementation
 │   ├── bracket-scope/           # Bracket scope feature (refactored)
 │   │   ├── index.ts             # Feature entry point
 │   │   ├── types.ts             # Common interfaces and types
@@ -110,6 +111,19 @@ The scope-deletion and bracket-scope features now follow a consistent internal s
      
      public findContainingClass(document: vscode.TextDocument, position: vscode.Position): ScopeInfo | null {
        // TypeScript-specific implementation
+     }
+   }
+   
+   // features/scope-deletion/finders/python-finder.ts
+   export class PythonScopeFinder implements ScopeFinder {
+     public readonly languageId: string = 'python';
+     
+     public findContainingFunction(document: vscode.TextDocument, position: vscode.Position): ScopeInfo | null {
+       // Python-specific implementation using indentation-based scoping
+     }
+     
+     public findContainingClass(document: vscode.TextDocument, position: vscode.Position): ScopeInfo | null {
+       // Python-specific implementation using indentation-based scoping
      }
    }
    
@@ -266,6 +280,7 @@ export function activate(context: vscode.ExtensionContext) {
   // Register language providers
   languageDetector.registerProvider(new TypeScriptProvider());
   languageDetector.registerProvider(new JavaScriptProvider());
+  languageDetector.registerProvider(new PythonProvider());
   // Add more language providers here
   
   // Activate features
@@ -306,7 +321,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 ### Phase 3: Additional Language Support
 
-- 🕒 Implement Python provider
+- ✅ Implement Python provider
 - 🕒 Implement Java provider
 - 🕒 Implement C# provider
 - 🕒 Add tests for language-specific features
@@ -331,7 +346,7 @@ export function activate(context: vscode.ExtensionContext) {
 |       | • Create feature module base class | | |
 |       | • Design language provider interface | | |
 | **3** | Add support for more languages | Medium | Medium |
-|       | • Python | | |
+|       | • ✅ Python | | |
 |       | • Java | | |
 |       | • C# | | |
 | **4** | Implement advanced features | Low | High |

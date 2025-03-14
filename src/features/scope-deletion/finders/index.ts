@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ScopeFinder } from '../types';
 import { TypeScriptScopeFinder } from './typescript-finder';
+import { PythonScopeFinder } from './python-finder';
 
 /**
  * Factory class for managing language-specific scope finders
@@ -39,5 +40,9 @@ export class ScopeFinderFactory {
     this.finders.set('javascript', tsOrJsFinder);
     this.finders.set('javascriptreact', tsOrJsFinder);
     this.finders.set('typescriptreact', tsOrJsFinder);
+    
+    // Register Python finder
+    const pythonFinder = new PythonScopeFinder();
+    this.registerFinder(pythonFinder);
   }
 }

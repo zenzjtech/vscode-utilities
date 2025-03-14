@@ -62,6 +62,7 @@ Handles detection and deletion of code scopes like functions, classes, interface
 | `ui-utils.ts` | UI-related utilities for highlighting and messaging |
 | `finders/index.ts` | Factory for managing language-specific scope finders |
 | `finders/typescript-finder.ts` | Implementation for TypeScript/JavaScript scope finding |
+| `finders/python-finder.ts` | Implementation for Python scope finding using indentation-based blocks |
 
 ### 🚪 Extension Entry Point (`src/extension.ts`)
 
@@ -100,7 +101,9 @@ The following components have been recently refactored to improve modularity and
    - Moved from monolithic class to modular structure
    - Separated UI utilities, command handlers, and scope finders
    - Implemented factory pattern for language-specific scope finders
-   - Prepared for supporting multiple programming languages
+   - Added support for multiple programming languages:
+     - TypeScript/JavaScript
+     - Python (indentation-based scope detection)
 
 ## 🚀 Future Structure Additions
 
