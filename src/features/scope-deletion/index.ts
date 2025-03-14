@@ -17,12 +17,117 @@ export class ScopeDeletionFeature extends FeatureModule {
    * Register the scope deletion command
    */
   register(): void {
-    const disposable = this.commandRegistry.registerTextEditorCommand(
+    const deleteDisposable = this.commandRegistry.registerTextEditorCommand(
       'extension.deleteCurrentScope',
       this.handleDeleteScope.bind(this)
     );
     
-    this.addDisposable(disposable);
+    const selectDisposable = this.commandRegistry.registerTextEditorCommand(
+      'extension.selectCurrentScope',
+      this.handleSelectScope.bind(this)
+    );
+    
+    this.addDisposable(deleteDisposable);
+    this.addDisposable(selectDisposable);
+  }
+
+  /**
+   * Handle the select scope command - selects the current scope and copies it to clipboard
+   * @param editor The active text editor
+   * @param edit The editor edit object
+   */
+  async handleSelectScope(editor: vscode.TextEditor, edit: vscode.TextEditorEdit): Promise<void> {
+    const document = editor.document;
+    const position = editor.selection.active;
+    
+    // First try to find if cursor is inside a function
+    const containingFunction = this.findContainingFunction(document, position);
+    if (containingFunction) {
+      await this.selectScope(editor, containingFunction.startLine, "Function");
+      return;
+    }
+    
+    // Then check if cursor is inside a class, interface, or enum
+    const containingClass = this.findContainingClass(document, position);
+    if (containingClass) {
+      await this.selectScope(editor, containingClass.startLine, containingClass.scopeType.charAt(0).toUpperCase() + containingClass.scopeType.slice(1));
+      return;
+    }
+    
+    vscode.window.showInformationMessage("Cursor is not within a function or class scope.");
+  }
+
+  /**
+   * Select a scope by its boundaries and copy content to clipboard
+   * @param editor The active text editor
+   * @param scopeStartLine The line where the scope starts
+   * @param scopeType The type of scope being selected (for the success message)
+   */
+  private async selectScope(editor: vscode.TextEditor, scopeStartLine: number, scopeType: string): Promise<void> {
+    const document = editor.document;
+    const endLine = this.findScopeBoundary(document, scopeStartLine, scopeStartLine);
+    
+    if (endLine !== null) {
+      // Extract the name of the scope (function, class, interface, enum)
+      const startLineText = document.lineAt(scopeStartLine).text.trim();
+      let scopeName = "unnamed";
+      
+      // Try to extract the name based on the scope type
+      const nameMatch = startLineText.match(new RegExp(`(${scopeType.toLowerCase()})\\s+(\\w+)`, 'i'));
+      if (nameMatch && nameMatch.length > 2) {
+        scopeName = nameMatch[2];
+      } else {
+        // Alternative pattern for function expressions or methods
+        const altMatch = startLineText.match(/(\w+)\s*[\(=]/);
+        if (altMatch && altMatch.length > 1) {
+          scopeName = altMatch[1];
+        }
+      }
+      
+      // Create a range from the scope start to end
+      const range = new vscode.Range(
+        new vscode.Position(scopeStartLine, 0),
+        new vscode.Position(endLine, document.lineAt(endLine).text.length)
+      );
+      
+      // Get the text content of the scope
+      const scopeText = document.getText(range);
+      
+      // Copy to clipboard
+      await vscode.env.clipboard.writeText(scopeText);
+      
+      // Create a new selection that covers the entire scope
+      editor.selection = new vscode.Selection(
+        range.start,
+        range.end
+      );
+      
+      // Scroll to show the selected area
+      editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+      
+      // Calculate lines in scope (adding 1 because line counts are zero-indexed)
+      const linesInScope = endLine - scopeStartLine + 1;
+      
+      // Show detailed message with appropriate icon
+      const message = `${scopeType} '${scopeName}' selected`;
+      const detailMessage = `Selected ${linesInScope} lines (from line ${scopeStartLine + 1} to line ${endLine + 1}). Content copied to clipboard.`;
+      
+      // Use different message types based on the scope type to get different icons
+      if (scopeType.toLowerCase() === 'function') {
+        vscode.window.showInformationMessage(message, { detail: detailMessage, modal: false });
+      } else if (scopeType.toLowerCase() === 'class') {
+        // Using warning message type just to get a different icon
+        vscode.window.showWarningMessage(message, { detail: detailMessage, modal: false });
+      } else if (scopeType.toLowerCase() === 'interface') {
+        vscode.window.showInformationMessage(message, { detail: detailMessage, modal: false });
+      } else if (scopeType.toLowerCase() === 'enum') {
+        vscode.window.showInformationMessage(message, { detail: detailMessage, modal: false });
+      } else {
+        vscode.window.showInformationMessage(message, { detail: detailMessage, modal: false });
+      }
+    } else {
+      vscode.window.showErrorMessage(`Couldn't determine ${scopeType.toLowerCase()} boundaries.`);
+    }
   }
 
   /**

@@ -30,6 +30,10 @@
       {
         "command": "extension.selectCurrentBracketScope",
         "title": "Select Current Bracket Scope and Copy to Clipboard"
+      },
+      {
+        "command": "extension.selectCurrentScope",
+        "title": "Select Current Scope and Copy to Clipboard"
       }
     ],
     "keybindings": [
@@ -46,6 +50,11 @@
       {
         "command": "extension.selectCurrentBracketScope",
         "key": "ctrl+c ctrl+s",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "extension.selectCurrentScope",
+        "key": "ctrl+c ctrl+a",
         "when": "editorTextFocus"
       }
     ],
