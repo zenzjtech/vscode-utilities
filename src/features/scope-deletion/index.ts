@@ -132,18 +132,39 @@ export class ScopeDeletionFeature extends FeatureModule {
     const endLine = this.findScopeBoundary(document, scopeStartLine, scopeStartLine);
     
     if (endLine !== null) {
+      // Extract the name of the scope (function, class, interface, enum)
+      const startLineText = document.lineAt(scopeStartLine).text.trim();
+      let scopeName = "unnamed";
+      
+      // Try to extract the name based on the scope type
+      const nameMatch = startLineText.match(new RegExp(`(${scopeType.toLowerCase()})\\s+(\\w+)`, 'i'));
+      if (nameMatch && nameMatch.length > 2) {
+        scopeName = nameMatch[2];
+      } else {
+        // Alternative pattern for function expressions or methods
+        const altMatch = startLineText.match(/(\w+)\s*[\(=]/);
+        if (altMatch && altMatch.length > 1) {
+          scopeName = altMatch[1];
+        }
+      }
+      
       // Create a range from the scope start to end
       const range = new vscode.Range(
         new vscode.Position(scopeStartLine, 0),
         new vscode.Position(endLine, document.lineAt(endLine).text.length)
       );
       
+      // Calculate lines removed (adding 1 because line counts are zero-indexed)
+      const linesRemoved = endLine - scopeStartLine + 1;
+      
       // Delete the scope
       await editor.edit(editBuilder => {
         editBuilder.delete(range);
       });
       
-      vscode.window.showInformationMessage(`${scopeType} deleted successfully!`);
+      vscode.window.showInformationMessage(
+        `${scopeType} '${scopeName}' deleted successfully! (${linesRemoved} lines removed)`
+      );
     } else {
       vscode.window.showErrorMessage(`Couldn't determine ${scopeType.toLowerCase()} boundaries.`);
     }

@@ -58,29 +58,71 @@ export class BracketScopeFeature extends FeatureModule {
     const bracketRange = this.findBracketPairContainingCursor(document, cursorLine, cursorChar);
     
     if (bracketRange) {
+      // Create a range for the content between brackets (excluding the brackets themselves)
+      const contentRange = new vscode.Range(
+        new vscode.Position(bracketRange.openBracketLine, bracketRange.openBracketChar + 1), // Start after the opening bracket
+        new vscode.Position(bracketRange.closeBracketLine, bracketRange.closeBracketChar) // End before the closing bracket
+      );
+      
+      // Calculate lines removed
+      const linesRemoved = bracketRange.closeBracketLine - bracketRange.openBracketLine + 1;
+      
+      // Get line for context where the brackets are
+      let contextText = "";
+      try {
+        // Try to extract some context from the surrounding code
+        const lineText = document.lineAt(bracketRange.openBracketLine).text.trim();
+        const contextMatch = lineText.match(/(\w+)\s*{/);
+        if (contextMatch && contextMatch.length > 1) {
+          contextText = ` in '${contextMatch[1]}'`;
+        }
+      } catch (e) {
+        // Ignore any errors in getting context
+      }
+      
       // Delete the content between brackets (excluding the brackets themselves)
       await editor.edit(editBuilder => {
-        editBuilder.delete(new vscode.Range(
-          bracketRange.openBracketLine, bracketRange.openBracketChar + 1, // Start after the opening bracket
-          bracketRange.closeBracketLine, bracketRange.closeBracketChar // End before the closing bracket
-        ));
+        editBuilder.delete(contentRange);
       });
       
-      vscode.window.showInformationMessage("Deleted content between brackets.");
+      vscode.window.showInformationMessage(
+        `Deleted content between brackets${contextText} (from line ${bracketRange.openBracketLine + 1} to ${bracketRange.closeBracketLine + 1}, ${linesRemoved} lines affected)`
+      );
     } else {
       // If no bracket pair contains the cursor, look for the next bracket pair
       const nextBracketRange = this.findNextBracketPair(document, cursorLine, cursorChar);
       
       if (nextBracketRange) {
+        // Create a range for the content between the next bracket pair (excluding the brackets)
+        const contentRange = new vscode.Range(
+          new vscode.Position(nextBracketRange.openBracketLine, nextBracketRange.openBracketChar + 1), // Start after the opening bracket
+          new vscode.Position(nextBracketRange.closeBracketLine, nextBracketRange.closeBracketChar) // End before the closing bracket
+        );
+        
+        // Calculate lines removed
+        const linesRemoved = nextBracketRange.closeBracketLine - nextBracketRange.openBracketLine + 1;
+        
+        // Get line for context where the brackets are
+        let contextText = "";
+        try {
+          // Try to extract some context from the surrounding code
+          const lineText = document.lineAt(nextBracketRange.openBracketLine).text.trim();
+          const contextMatch = lineText.match(/(\w+)\s*{/);
+          if (contextMatch && contextMatch.length > 1) {
+            contextText = ` in '${contextMatch[1]}'`;
+          }
+        } catch (e) {
+          // Ignore any errors in getting context
+        }
+        
         // Delete the content between the next bracket pair (excluding the brackets)
         await editor.edit(editBuilder => {
-          editBuilder.delete(new vscode.Range(
-            nextBracketRange.openBracketLine, nextBracketRange.openBracketChar + 1, // Start after the opening bracket
-            nextBracketRange.closeBracketLine, nextBracketRange.closeBracketChar // End before the closing bracket
-          ));
+          editBuilder.delete(contentRange);
         });
         
-        vscode.window.showInformationMessage("Deleted content between next bracket pair.");
+        vscode.window.showInformationMessage(
+          `Deleted content between next bracket pair${contextText} (from line ${nextBracketRange.openBracketLine + 1} to ${nextBracketRange.closeBracketLine + 1}, ${linesRemoved} lines affected)`
+        );
       } else {
         vscode.window.showInformationMessage("No bracket scope found.");
       }
