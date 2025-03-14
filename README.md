@@ -15,14 +15,20 @@ This extension provides powerful commands to work with code scopes:
 
 These features help you quickly clean up, refactor, or reuse code without having to manually select large blocks of text.
 
-### 🧭 S-expression Navigation (Emacs-like)
+### 🧭 S-expression Navigation and Selection (Emacs-like)
 
-The extension provides Emacs-like S-expression navigation commands with enhanced visual feedback:
+The extension provides Emacs-like S-expression navigation and selection commands with enhanced visual feedback:
 
+#### Navigation Commands
 - **Forward S-expression**: Navigate to the end of the next balanced expression
 - **Backward S-expression**: Navigate to the beginning of the previous balanced expression
 
-These features help programmers quickly navigate through code by treating code as structured expressions (like Lisp S-expressions), jumping between balanced delimiters such as parentheses, brackets, and braces, as well as identifiers and literals.
+#### Selection Commands
+- **Mark S-expression**: Select the current or next balanced expression
+- **Mark Parent S-expression**: Select the parent expression that contains the current cursor position
+- **Expand Selection to Parent S-expression**: Expand the current selection to include the parent expression
+
+These features help programmers quickly navigate and manipulate code by treating code as structured expressions (like Lisp S-expressions), jumping between balanced delimiters such as parentheses, brackets, and braces, as well as identifiers and literals.
 
 The enhanced visual feedback system provides:
 - Visual highlighting of the source and target positions
@@ -45,8 +51,9 @@ The extension intelligently:
 - 🔍 Detects when your cursor is on or within a function/method/class/interface/enum
 - 📍 Identifies the complete scope of the code block with proper boundary detection
 - ✂️ Provides precise deletion or selection of just the content you want
-- 🧠 Identifies balanced expressions for S-expression navigation
+- 🧠 Identifies balanced expressions for S-expression navigation and selection
 - 🚀 Navigates efficiently through code using structural patterns
+- 📋 Automatically copies selected content to clipboard when configured
 - 📋 Automatically copies deleted or selected content to the clipboard (configurable)
 - 🔆 Provides visual highlighting before deletion for confirmation (configurable)
 - 🎯 Renders enhanced visual feedback during S-expression navigation (configurable)
@@ -61,6 +68,9 @@ The extension intelligently:
 | `selectCurrentBracketScope` | Content between `{ }` | Everything | Copy implementation details |
 | `forwardSexp` | Next balanced expression | Everything | Navigate to end of expression |
 | `backwardSexp` | Previous balanced expression | Everything | Navigate to beginning of expression |
+| `markSexp` | Current or next balanced expression | Everything | Select expression |
+| `markParentSexp` | Parent expression of current cursor position | Everything | Select parent expression |
+| `expandSelectionToParentSexp` | Current selection | Everything | Expand selection to parent expression |
 
 ### 🧩 Supported Languages
 
@@ -108,6 +118,9 @@ flowchart TD
    - `Extension: Select Current Bracket Scope and Copy to Clipboard`
    - `Extension: Navigate to End of S-expression (Emacs-like Forward Sexp)`
    - `Extension: Navigate to Start of S-expression (Emacs-like Backward Sexp)`
+   - `Extension: Mark S-expression`
+   - `Extension: Mark Parent S-expression`
+   - `Extension: Expand Selection to Parent S-expression`
 
 4. Alternatively, use the status bar indicator to:
    - View your current scope context
@@ -148,12 +161,30 @@ For faster access, the extension provides the following keyboard shortcuts:
   "key": "ctrl+alt+b",
   "command": "extension.backwardSexp",
   "when": "editorTextFocus"
+},
+{
+  "key": "ctrl+alt+m",
+  "command": "extension.markSexp",
+  "when": "editorTextFocus"
+},
+{
+  "key": "ctrl+alt+p",
+  "command": "extension.markParentSexp",
+  "when": "editorTextFocus"
+},
+{
+  "key": "ctrl+alt+e",
+  "command": "extension.expandSelectionToParentSexp",
+  "when": "editorTextFocus"
 }
 ```
 
 The S-expression navigation commands use the familiar Emacs keybindings:
 - `Ctrl+Alt+F` - Forward S-expression
 - `Ctrl+Alt+B` - Backward S-expression
+- `Ctrl+Alt+M` - Mark S-expression
+- `Ctrl+Alt+P` - Mark Parent S-expression
+- `Ctrl+Alt+E` - Expand Selection to Parent S-expression
 
 ## 📋 Requirements
 

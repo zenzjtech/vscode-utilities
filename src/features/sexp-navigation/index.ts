@@ -26,6 +26,7 @@ export class SexpNavigationFeature extends FeatureModule {
    * Register the sexp navigation commands
    */
   register(): void {
+    // Navigation commands
     const forwardSexpDisposable = this.commandRegistry.registerTextEditorCommand(
       'extension.forwardSexp',
       this.handlers.handleForwardSexp.bind(this.handlers)
@@ -36,8 +37,28 @@ export class SexpNavigationFeature extends FeatureModule {
       this.handlers.handleBackwardSexp.bind(this.handlers)
     );
     
+    // Selection commands
+    const markSexpDisposable = this.commandRegistry.registerTextEditorCommand(
+      'extension.markSexp',
+      this.handlers.handleMarkSexp.bind(this.handlers)
+    );
+    
+    const markParentSexpDisposable = this.commandRegistry.registerTextEditorCommand(
+      'extension.markParentSexp',
+      this.handlers.handleMarkParentSexp.bind(this.handlers)
+    );
+    
+    const expandSexpSelectionDisposable = this.commandRegistry.registerTextEditorCommand(
+      'extension.expandSexpSelection',
+      this.handlers.handleExpandSexpSelection.bind(this.handlers)
+    );
+    
+    // Add all disposables
     this.addDisposable(forwardSexpDisposable);
     this.addDisposable(backwardSexpDisposable);
+    this.addDisposable(markSexpDisposable);
+    this.addDisposable(markParentSexpDisposable);
+    this.addDisposable(expandSexpSelectionDisposable);
   }
 }
 
