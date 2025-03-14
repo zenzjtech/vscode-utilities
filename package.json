@@ -34,6 +34,10 @@
       {
         "command": "extension.selectCurrentScope",
         "title": "Select Current Scope and Copy to Clipboard"
+      },
+      {
+        "command": "extension.showScopeActions",
+        "title": "Show Scope Actions"
       }
     ],
     "keybindings": [

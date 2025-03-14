@@ -5,12 +5,21 @@ import { CommandRegistry, FeatureModule } from '../../core';
  * Feature module for deleting code scopes (functions, methods, and classes)
  */
 export class ScopeDeletionFeature extends FeatureModule {
+  private statusBarItem: vscode.StatusBarItem;
+  private currentScopeInfo: { scopeType: string; name: string; startLine: number } | null = null;
+  private selectionChangeDisposable: vscode.Disposable | null = null;
+  private _selectionChangeTimeout: NodeJS.Timeout | null = null;
+
   /**
    * Create a new ScopeDeletionFeature
    * @param commandRegistry The command registry service
    */
   constructor(commandRegistry: CommandRegistry) {
     super(commandRegistry, 'Scope Deletion');
+    
+    // Create status bar item
+    this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    this.statusBarItem.command = 'extension.showScopeActions';
   }
 
   /**
@@ -26,9 +35,225 @@ export class ScopeDeletionFeature extends FeatureModule {
       'extension.selectCurrentScope',
       this.handleSelectScope.bind(this)
     );
+
+    const scopeActionsDisposable = this.commandRegistry.register(
+      'extension.showScopeActions',
+      this.showScopeActions.bind(this)
+    );
     
     this.addDisposable(deleteDisposable);
     this.addDisposable(selectDisposable);
+    this.addDisposable(scopeActionsDisposable);
+    this.addDisposable(this.statusBarItem);
+  }
+
+  /**
+   * Activate the feature
+   */
+  activate(): void {
+    // Start listening to selection changes when activated
+    this.startListeningToSelectionChanges();
+    
+    // Show the status bar item
+    this.statusBarItem.show();
+    
+    super.activate();
+  }
+
+  /**
+   * Deactivate the feature
+   */
+  deactivate(): void {
+    // Stop listening to selection changes when deactivated
+    this.stopListeningToSelectionChanges();
+    
+    // Hide the status bar item
+    this.statusBarItem.hide();
+    
+    super.deactivate();
+  }
+
+  /**
+   * Start listening to editor selection changes to update the status bar
+   */
+  private startListeningToSelectionChanges(): void {
+    if (!this.selectionChangeDisposable) {
+      this.selectionChangeDisposable = vscode.window.onDidChangeTextEditorSelection(
+        this.onSelectionChange.bind(this)
+      );
+      
+      // Also register to active editor changes
+      this.addDisposable(
+        vscode.window.onDidChangeActiveTextEditor(
+          this.onActiveEditorChange.bind(this)
+        )
+      );
+      
+      // Update status bar for current editor
+      this.updateStatusBar();
+    }
+  }
+
+  /**
+   * Stop listening to editor selection changes
+   */
+  private stopListeningToSelectionChanges(): void {
+    if (this.selectionChangeDisposable) {
+      this.selectionChangeDisposable.dispose();
+      this.selectionChangeDisposable = null;
+    }
+  }
+
+  /**
+   * Handle selection change events
+   */
+  private onSelectionChange(event: vscode.TextEditorSelectionChangeEvent): void {
+    // Avoid unnecessary updates by using a debounce mechanism
+    if (this._selectionChangeTimeout) {
+      clearTimeout(this._selectionChangeTimeout);
+    }
+    this._selectionChangeTimeout = setTimeout(() => {
+      this.updateStatusBar();
+    }, 100); // 100ms debounce
+  }
+
+  /**
+   * Handle active editor change events
+   */
+  private onActiveEditorChange(editor: vscode.TextEditor | undefined): void {
+    this.updateStatusBar();
+  }
+
+  /**
+   * Update the status bar with the current scope information
+   */
+  private async updateStatusBar(): Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      this.statusBarItem.hide();
+      this.currentScopeInfo = null;
+      return;
+    }
+
+    const document = editor.document;
+    const position = editor.selection.active;
+    
+    // First try to find if cursor is inside a function
+    const containingFunction = this.findContainingFunction(document, position);
+    if (containingFunction) {
+      // Get function name
+      const lineText = document.lineAt(containingFunction.startLine).text.trim();
+      let scopeName = "unnamed";
+      
+      // Try to extract the name based on patterns
+      const functionMatch = lineText.match(/function\s+(\w+)/);
+      if (functionMatch && functionMatch.length > 1) {
+        scopeName = functionMatch[1];
+      } else {
+        // Alternative pattern for function expressions or methods
+        const altMatch = lineText.match(/(\w+)\s*[\(=]/);
+        if (altMatch && altMatch.length > 1) {
+          scopeName = altMatch[1];
+        }
+      }
+
+      this.currentScopeInfo = {
+        scopeType: 'Function',
+        name: scopeName,
+        startLine: containingFunction.startLine
+      };
+      
+      this.statusBarItem.text = `$(symbol-method) ${scopeName}`;
+      this.statusBarItem.tooltip = `Function: ${scopeName} (Line ${containingFunction.startLine + 1})`;
+      this.statusBarItem.show();
+      return;
+    }
+    
+    // Then check if cursor is inside a class, interface, or enum
+    const containingClass = this.findContainingClass(document, position);
+    if (containingClass) {
+      // Get class name
+      const lineText = document.lineAt(containingClass.startLine).text.trim();
+      let scopeName = "unnamed";
+      
+      // Try to extract the name based on the scope type
+      const scopeType = containingClass.scopeType.charAt(0).toUpperCase() + containingClass.scopeType.slice(1);
+      const nameMatch = lineText.match(new RegExp(`(${containingClass.scopeType})\\s+(\\w+)`, 'i'));
+      if (nameMatch && nameMatch.length > 2) {
+        scopeName = nameMatch[2];
+      }
+
+      this.currentScopeInfo = {
+        scopeType: scopeType,
+        name: scopeName,
+        startLine: containingClass.startLine
+      };
+      
+      // Use different icons based on scope type
+      let icon = '$(symbol-class)';
+      if (containingClass.scopeType === 'interface') {
+        icon = '$(symbol-interface)';
+      } else if (containingClass.scopeType === 'enum') {
+        icon = '$(symbol-enum)';
+      }
+      
+      this.statusBarItem.text = `${icon} ${scopeName}`;
+      this.statusBarItem.tooltip = `${scopeType}: ${scopeName} (Line ${containingClass.startLine + 1})`;
+      this.statusBarItem.show();
+      return;
+    }
+    
+    // If no scope found, hide the status bar item
+    this.statusBarItem.hide();
+    this.currentScopeInfo = null;
+  }
+
+  /**
+   * Show quick actions for the current scope
+   */
+  private async showScopeActions(): Promise<void> {
+    if (!this.currentScopeInfo) {
+      vscode.window.showInformationMessage("No active scope detected at cursor position.");
+      return;
+    }
+
+    const scopeType = this.currentScopeInfo.scopeType;
+    const scopeName = this.currentScopeInfo.name;
+    
+    const actions = [
+      {
+        label: `Select ${scopeType}`,
+        description: `Select the current ${scopeType.toLowerCase()} and copy to clipboard`,
+        action: 'select'
+      },
+      {
+        label: `Delete ${scopeType}`,
+        description: `Delete the current ${scopeType.toLowerCase()}`,
+        action: 'delete'
+      }
+    ];
+    
+    const selectedAction = await vscode.window.showQuickPick(actions, {
+      placeHolder: `${scopeType}: ${scopeName}`,
+      title: `Actions for ${scopeType} ${scopeName}`
+    });
+    
+    if (selectedAction) {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        return;
+      }
+      
+      const startLine = this.currentScopeInfo.startLine;
+      
+      if (selectedAction.action === 'select') {
+        // Execute select command
+        await this.selectScope(editor, startLine, scopeType);
+      } else if (selectedAction.action === 'delete') {
+        // Execute delete command
+        await this.deleteScope(editor, startLine, scopeType);
+      }
+    }
   }
 
   /**
