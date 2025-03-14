@@ -37,10 +37,7 @@ export class BracketScopeFeature extends FeatureModule {
   }
 
   /**
-   * Handle the delete bracket scope command
-   * @param editor The active text editor
-   * @param edit The editor edit object
-   * @param position Optional cursor position (defaults to current selection)
+   * Deletes the content between the bracket pair that contains the cursor
    */
   private async handleDeleteBracketScope(
     editor: vscode.TextEditor, 
@@ -80,17 +77,20 @@ export class BracketScopeFeature extends FeatureModule {
         // Ignore any errors in getting context
       }
       
-      // Delete the content between brackets (excluding the brackets themselves)
-      await editor.edit(editBuilder => {
-        editBuilder.delete(contentRange);
-      });
-      
-      // Show detailed message with expanded information
-      const message = `Deleted content between brackets${contextText}`;
-      const detailMessage = `From line ${bracketRange.openBracketLine + 1} to ${bracketRange.closeBracketLine + 1} (${linesRemoved} lines affected)`;
-      
-      // Use information message type with detail option for expanded view
-      vscode.window.showInformationMessage(message, { detail: detailMessage, modal: false });
+      // Highlight the content and ask for confirmation
+      if (await this.highlightAndConfirmBracketDeletion(editor, contentRange, `bracket content${contextText}`, linesRemoved)) {
+        // Delete the content between brackets (excluding the brackets themselves)
+        await editor.edit(editBuilder => {
+          editBuilder.delete(contentRange);
+        });
+        
+        // Show detailed message with expanded information
+        const message = `Deleted content between brackets${contextText}`;
+        const detailMessage = `From line ${bracketRange.openBracketLine + 1} to ${bracketRange.closeBracketLine + 1} (${linesRemoved} lines affected)`;
+        
+        // Use information message type with detail option for expanded view
+        vscode.window.showInformationMessage(message, { detail: detailMessage, modal: false });
+      }
     } else {
       // If no bracket pair contains the cursor, look for the next bracket pair
       const nextBracketRange = this.findNextBracketPair(document, cursorLine, cursorChar);
@@ -118,17 +118,20 @@ export class BracketScopeFeature extends FeatureModule {
           // Ignore any errors in getting context
         }
         
-        // Delete the content between the next bracket pair (excluding the brackets)
-        await editor.edit(editBuilder => {
-          editBuilder.delete(contentRange);
-        });
-        
-        // Show detailed message with expanded information
-        const message = `Deleted content between next bracket pair${contextText}`;
-        const detailMessage = `From line ${nextBracketRange.openBracketLine + 1} to ${nextBracketRange.closeBracketLine + 1} (${linesRemoved} lines affected)`;
-        
-        // Use warning message type for a different icon
-        vscode.window.showWarningMessage(message, { detail: detailMessage, modal: false });
+        // Highlight the content and ask for confirmation
+        if (await this.highlightAndConfirmBracketDeletion(editor, contentRange, `next bracket pair content${contextText}`, linesRemoved)) {
+          // Delete the content between the next bracket pair (excluding the brackets)
+          await editor.edit(editBuilder => {
+            editBuilder.delete(contentRange);
+          });
+          
+          // Show detailed message with expanded information
+          const message = `Deleted content between next bracket pair${contextText}`;
+          const detailMessage = `From line ${nextBracketRange.openBracketLine + 1} to ${nextBracketRange.closeBracketLine + 1} (${linesRemoved} lines affected)`;
+          
+          // Use warning message type for a different icon
+          vscode.window.showWarningMessage(message, { detail: detailMessage, modal: false });
+        }
       } else {
         vscode.window.showInformationMessage("No bracket scope found.");
       }
@@ -310,5 +313,59 @@ export class BracketScopeFeature extends FeatureModule {
     }
     
     return null;
+  }
+
+  /**
+   * Highlight the bracket content that will be deleted and ask for confirmation
+   * @param editor The active text editor
+   * @param contentRange Range of content to highlight and potentially delete
+   * @param contextDescription Description of what will be deleted
+   * @param linesRemoved Number of lines affected
+   * @returns True if the user confirms deletion, false otherwise
+   */
+  private async highlightAndConfirmBracketDeletion(
+    editor: vscode.TextEditor, 
+    contentRange: vscode.Range, 
+    contextDescription: string, 
+    linesRemoved: number
+  ): Promise<boolean> {
+    // Store the original selections
+    const originalSelections = [...editor.selections];
+    
+    // Create a new selection that covers the entire content range
+    editor.selection = new vscode.Selection(
+      contentRange.start,
+      contentRange.end
+    );
+    
+    // Create a decoration type for the highlighting
+    const decorationType = vscode.window.createTextEditorDecorationType({
+      backgroundColor: new vscode.ThemeColor('editor.selectionBackground'),
+      border: '1px solid',
+      borderColor: new vscode.ThemeColor('editor.selectionHighlightBorder')
+    });
+    
+    // Apply the decoration
+    editor.setDecorations(decorationType, [contentRange]);
+    
+    // Scroll to show the highlighted area
+    editor.revealRange(contentRange, vscode.TextEditorRevealType.InCenter);
+    
+    // Ask for confirmation
+    const result = await vscode.window.showWarningMessage(
+      `Delete ${contextDescription}?`,
+      { detail: `This will remove content spanning ${linesRemoved} lines (from line ${contentRange.start.line + 1} to ${contentRange.end.line + 1})`, modal: false },
+      { title: 'Delete', isCloseAffordance: false },
+      { title: 'Cancel', isCloseAffordance: true }
+    );
+    
+    // Remove the decoration
+    decorationType.dispose();
+    
+    // Restore the original selections
+    editor.selections = originalSelections;
+    
+    // Return true if the user clicked 'Delete'
+    return result?.title === 'Delete';
   }
 }

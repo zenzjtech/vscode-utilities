@@ -30,55 +30,43 @@ export class ScopeDeletionFeature extends FeatureModule {
    * @param editor The active text editor
    * @param edit The editor edit object
    */
-  private async handleDeleteScope(editor: vscode.TextEditor, edit: vscode.TextEditorEdit): Promise<void> {
-    const position = editor.selection.active;
+  async handleDeleteScope(editor: vscode.TextEditor, edit: vscode.TextEditorEdit): Promise<void> {
     const document = editor.document;
-    const line_number = position.line;
-
-    // First, try to detect if cursor is directly on a function/class definition
-    const line_text = document.lineAt(line_number).text.trim();
-    console.log(line_number, line_text, position);
+    const position = editor.selection.active;
     
-    // Enhanced pattern detection for both TypeScript and JavaScript
-    const function_match = /^(async\s+function|function)\s+\w+\s*\(/.test(line_text) || 
-                          /^(async\s+)?(\w+)\s*\(\s*.*\s*\)\s*(\{|=>)/.test(line_text) || // Arrow functions and object methods
-                          /^(const|let|var)\s+\w+\s*=\s*(async\s*)?\(\s*.*\s*\)\s*=>/.test(line_text); // Variable assigned functions
-    
-    const class_match = /^class\s+\w+/.test(line_text);
-    
-    // Method detection pattern (for class methods)
-    const method_match = /^(async\s+)?[\w_$]+\s*(\(|\<)/.test(line_text) && 
-                         !function_match && !class_match && line_text.includes('(');
-
-    if (function_match || method_match) {
-      await this.deleteFunction(editor, edit, position);
-    } else if (class_match) {
-      await this.deleteClass(editor, edit, position);
-    } else {
-      // Check if cursor is INSIDE a function or class scope
-      
-      // First, check if the cursor is inside a function body
-      const containingFunction = this.findContainingFunction(document, position);
-      if (containingFunction) {
+    // First try to find if cursor is inside a function
+    const containingFunction = this.findContainingFunction(document, position);
+    if (containingFunction) {
+      // Highlight the function scope
+      if (await this.highlightAndConfirmDeletion(editor, containingFunction.startLine, 'Function')) {
         await this.deleteFunction(editor, edit, new vscode.Position(containingFunction.startLine, 0));
-        return;
       }
-      
-      // Then check if cursor is inside a class, interface, or enum
-      const containingClass = this.findContainingClass(document, position);
-      if (containingClass) {
-        if (containingClass.scopeType === 'class') {
+      return;
+    }
+    
+    // Then check if cursor is inside a class, interface, or enum
+    const containingClass = this.findContainingClass(document, position);
+    if (containingClass) {
+      if (containingClass.scopeType === 'class') {
+        // Highlight the class scope
+        if (await this.highlightAndConfirmDeletion(editor, containingClass.startLine, 'Class')) {
           await this.deleteClass(editor, edit, new vscode.Position(containingClass.startLine, 0));
-        } else if (containingClass.scopeType === 'interface') {
+        }
+      } else if (containingClass.scopeType === 'interface') {
+        // Highlight the interface scope
+        if (await this.highlightAndConfirmDeletion(editor, containingClass.startLine, 'Interface')) {
           await this.deleteInterface(editor, edit, new vscode.Position(containingClass.startLine, 0));
-        } else if (containingClass.scopeType === 'enum') {
+        }
+      } else if (containingClass.scopeType === 'enum') {
+        // Highlight the enum scope
+        if (await this.highlightAndConfirmDeletion(editor, containingClass.startLine, 'Enum')) {
           await this.deleteEnum(editor, edit, new vscode.Position(containingClass.startLine, 0));
         }
-        return;
       }
-      
-      vscode.window.showInformationMessage("Cursor is not within a function or class scope.");
+      return;
     }
+    
+    vscode.window.showInformationMessage("Cursor is not within a function or class scope.");
   }
 
   /**
@@ -299,6 +287,87 @@ export class ScopeDeletionFeature extends FeatureModule {
     }
     
     return null;
+  }
+
+  /**
+   * Highlight the scope that will be deleted and ask for confirmation
+   * @param editor The active text editor
+   * @param startLine The start line of the scope
+   * @param scopeType The type of scope (Function, Class, Interface, Enum)
+   * @returns True if the user confirms deletion, false otherwise
+   */
+  private async highlightAndConfirmDeletion(editor: vscode.TextEditor, startLine: number, scopeType: string): Promise<boolean> {
+    const document = editor.document;
+    const endLine = this.findScopeBoundary(document, startLine, startLine);
+    
+    if (endLine === null) {
+      vscode.window.showErrorMessage(`Couldn't determine ${scopeType.toLowerCase()} boundaries.`);
+      return false;
+    }
+    
+    // Extract the name of the scope (function, class, interface, enum)
+    const startLineText = document.lineAt(startLine).text.trim();
+    let scopeName = "unnamed";
+    
+    // Try to extract the name based on the scope type
+    const nameMatch = startLineText.match(new RegExp(`(${scopeType.toLowerCase()})\\s+(\\w+)`, 'i'));
+    if (nameMatch && nameMatch.length > 2) {
+      scopeName = nameMatch[2];
+    } else {
+      // Alternative pattern for function expressions or methods
+      const altMatch = startLineText.match(/(\w+)\s*[\(=]/);
+      if (altMatch && altMatch.length > 1) {
+        scopeName = altMatch[1];
+      }
+    }
+    
+    // Calculate lines that will be removed
+    const linesRemoved = endLine - startLine + 1;
+    
+    // Create a range for highlighting
+    const highlightRange = new vscode.Range(
+      new vscode.Position(startLine, 0),
+      new vscode.Position(endLine, document.lineAt(endLine).text.length)
+    );
+    
+    // Store the original selections
+    const originalSelections = [...editor.selections];
+    
+    // Create a new selection that covers the entire scope
+    editor.selection = new vscode.Selection(
+      highlightRange.start,
+      highlightRange.end
+    );
+    
+    // Create a decoration type for the highlighting
+    const decorationType = vscode.window.createTextEditorDecorationType({
+      backgroundColor: new vscode.ThemeColor('editor.selectionBackground'),
+      border: '1px solid',
+      borderColor: new vscode.ThemeColor('editor.selectionHighlightBorder')
+    });
+    
+    // Apply the decoration
+    editor.setDecorations(decorationType, [highlightRange]);
+    
+    // Scroll to show the highlighted area
+    editor.revealRange(highlightRange, vscode.TextEditorRevealType.InCenter);
+    
+    // Ask for confirmation
+    const result = await vscode.window.showWarningMessage(
+      `Delete ${scopeType.toLowerCase()} '${scopeName}'?`,
+      { detail: `This will remove ${linesRemoved} lines of code (from line ${startLine + 1} to ${endLine + 1})`, modal: false },
+      { title: 'Delete', isCloseAffordance: false },
+      { title: 'Cancel', isCloseAffordance: true }
+    );
+    
+    // Remove the decoration
+    decorationType.dispose();
+    
+    // Restore the original selections
+    editor.selections = originalSelections;
+    
+    // Return true if the user clicked 'Delete'
+    return result?.title === 'Delete';
   }
 
   // Helper utility to get indentation level
