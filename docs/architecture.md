@@ -246,7 +246,96 @@ export class CommandRegistry {
 }
 ```
 
-### 4. Dependency Injection 💉
+### 4. Refactoring Patterns 🔄
+
+#### A. Handler Specialization Pattern 🧩
+
+As features grow in complexity, handler files can become large and difficult to maintain. The Handler Specialization Pattern splits large handler files into smaller, specialized modules based on functionality:
+
+1. **Base Handler**: Create a base abstract class with common utility methods
+2. **Specialized Handlers**: Create specialized handler classes for different operation types
+3. **Facade Handler**: Use a facade pattern to maintain backward compatibility
+
+```
+handlers/
+├── base-handler.ts         # Abstract base class with shared utility methods
+├── navigation-handlers.ts  # Specific operation type handlers
+├── selection-handlers.ts   # Specific operation type handlers
+├── transposition-handlers.ts # Specific operation type handlers
+└── index.ts                # Facade that maintains API compatibility
+```
+
+##### Example Implementation:
+
+```typescript
+// Base abstract class with shared methods
+// handlers/base-handler.ts
+export abstract class BaseSexpHandler {
+  // Common utility methods used across handlers
+  protected findParentSexpression(...) { /* implementation */ }
+  protected isSmallerBoundary(...) { /* implementation */ }
+  // Other utility methods...
+}
+
+// Specialized handlers for specific operations
+// handlers/navigation-handlers.ts
+export class SexpNavigationHandlers extends BaseSexpHandler {
+  public async handleForwardSexp(...) { /* implementation */ }
+  public async handleBackwardSexp(...) { /* implementation */ }
+}
+
+// handlers/selection-handlers.ts
+export class SexpSelectionHandlers extends BaseSexpHandler {
+  public async handleMarkSexp(...) { /* implementation */ }
+  public async handleMarkParentSexp(...) { /* implementation */ }
+  // Other selection methods...
+}
+
+// handlers/index.ts - Facade pattern
+export class SexpHandlers {
+  private navigationHandlers = new SexpNavigationHandlers();
+  private selectionHandlers = new SexpSelectionHandlers();
+  
+  // Public API maintains the same interface
+  public async handleForwardSexp(...) {
+    return this.navigationHandlers.handleForwardSexp(...);
+  }
+  
+  public async handleMarkSexp(...) {
+    return this.selectionHandlers.handleMarkSexp(...);
+  }
+  // Other methods...
+}
+
+// For backward compatibility
+export { SexpHandlers as SexpNavigationHandlers };
+```
+
+##### Benefits:
+
+1. **🔍 Improved Focus**: Each handler class has a single responsibility
+2. **🧰 Better Maintainability**: Smaller files are easier to understand and modify
+3. **👥 Team Collaboration**: Different developers can work on different handler types
+4. **🧪 Testability**: Specialized handlers are easier to test in isolation
+5. **♻️ Code Reuse**: Base handler provides common functionality to all specialized handlers
+6. **🔄 Backward Compatibility**: Facade pattern preserves the public API
+
+##### When to Apply:
+
+* When a single handler file exceeds 300-500 lines
+* When a handler implements multiple distinct operation types
+* When there's significant duplication between different handler methods
+* When different parts of the handler file change at different rates
+
+##### Real-World Example:
+
+The S-expression navigation feature was refactored using this pattern, splitting the original 600+ line handler file into specialized modules for navigation, selection, and transposition operations while maintaining the same public API.
+
+#### B. Feature Module Pattern 🧰
+
+{{ ... }}
+
+### 5. Dependency Injection 💉
 
 ```typescript
 // core/container.ts
@@ -265,7 +354,7 @@ export class ServiceContainer {
 export const container = new ServiceContainer();
 ```
 
-### 5. Extension Entry Point 🚪
+### 6. Extension Entry Point 🚪
 
 ```typescript
 // extension.ts
