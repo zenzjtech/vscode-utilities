@@ -28,6 +28,18 @@
         "title": "Delete Content Within Current Brackets"
       }
     ],
+    "keybindings": [
+      {
+        "command": "extension.deleteCurrentScope",
+        "key": "ctrl+c ctrl+k",
+        "when": "editorTextFocus && !editorReadonly"
+      },
+      {
+        "command": "extension.deleteCurrentBracketScope",
+        "key": "ctrl+c ctrl+b",
+        "when": "editorTextFocus && !editorReadonly"
+      }
+    ],
     "configuration": {
       "title": "VS Code Utilities",
       "properties": {
