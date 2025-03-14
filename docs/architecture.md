@@ -10,6 +10,7 @@ This document outlines the architecture for the VSCode Utilities extension, desi
 2. **🔄 Strategy Pattern**: Language-specific implementations are interchangeable
 3. **💉 Dependency Injection**: Services and components are loosely coupled
 4. **⚡ Progressive Enhancement**: Basic features work with all languages, advanced features with fully supported languages
+5. **🔍 Separation of Concerns**: UI, business logic, and language-specific operations are separated
 
 ## 🏛️ Architecture Components
 
@@ -30,6 +31,12 @@ This document outlines the architecture for the VSCode Utilities extension, desi
 - Each feature (like scope deletion) becomes a self-contained module
 - Modules register their commands with the command registry
 - Modules request the appropriate language provider for operations
+- Features follow a consistent internal structure:
+  - `types.ts`: Common interfaces and types
+  - `finders/`: Language-specific implementations for finding code structures
+  - `handlers.ts`: Command handlers and business logic
+  - `ui-utils.ts`: UI-related utilities and presentation logic
+  - `index.ts`: Feature entry point and re-exports
 
 ### 2. Directory Structure 📂
 
@@ -46,14 +53,22 @@ src/
 │   ├── typescript-provider.ts   # TypeScript implementation 
 │   └── other-language-providers/# Folder for future language providers
 ├── features/
-│   ├── scope-deletion/          # Current scope deletion feature
+│   ├── scope-deletion/          # Scope deletion feature (refactored)
 │   │   ├── index.ts             # Feature entry point
-│   │   ├── commands.ts          # Command definitions
-│   │   └── operations.ts        # Core operations
-│   ├── bracket-scope/           # Bracket scope feature
-│   │   ├── index.ts
-│   │   ├── commands.ts
-│   │   └── operations.ts
+│   │   ├── types.ts             # Common interfaces and types
+│   │   ├── ui-utils.ts          # UI-related utilities
+│   │   ├── handlers.ts          # Command handlers
+│   │   └── finders/             # Language-specific finders
+│   │       ├── index.ts         # Factory for language finders
+│   │       └── typescript-finder.ts # TypeScript implementation
+│   ├── bracket-scope/           # Bracket scope feature (refactored)
+│   │   ├── index.ts             # Feature entry point
+│   │   ├── types.ts             # Common interfaces and types
+│   │   ├── ui-utils.ts          # UI-related utilities
+│   │   ├── handlers.ts          # Command handlers
+│   │   └── finders/             # Language-specific finders
+│   │       ├── index.ts         # Factory for language finders
+│   │       └── curly-bracket-finder.ts # Curly bracket implementation
 │   └── [future-features]/       # Structure for new features
 └── utils/
     ├── document-utils.ts        # Document helper functions
@@ -61,6 +76,108 @@ src/
 ```
 
 ### 3. Implementation Details 🔧
+
+#### Feature Module Internal Structure
+
+The scope-deletion and bracket-scope features now follow a consistent internal structure:
+
+1. **Types**: Define common interfaces and types needed across the feature
+   ```typescript
+   // features/scope-deletion/types.ts
+   export interface ScopeInfo {
+     scopeType: ScopeType;
+     name: string;
+     startLine: number;
+   }
+   
+   export interface ScopeFinder {
+     readonly languageId: string;
+     findContainingFunction(document: vscode.TextDocument, position: vscode.Position): ScopeInfo | null;
+     findContainingClass(document: vscode.TextDocument, position: vscode.Position): ScopeInfo | null;
+     findScopeBoundary(document: vscode.TextDocument, startLine: number, currentLine: number): number | null;
+   }
+   ```
+
+2. **Finders**: Language-specific implementations for finding code structures
+   ```typescript
+   // features/scope-deletion/finders/typescript-finder.ts
+   export class TypeScriptScopeFinder implements ScopeFinder {
+     public readonly languageId: string = 'typescript';
+     
+     public findContainingFunction(document: vscode.TextDocument, position: vscode.Position): ScopeInfo | null {
+       // TypeScript-specific implementation
+     }
+     
+     public findContainingClass(document: vscode.TextDocument, position: vscode.Position): ScopeInfo | null {
+       // TypeScript-specific implementation
+     }
+   }
+   
+   // features/scope-deletion/finders/index.ts
+   export class ScopeFinderFactory {
+     private static finders: Map<string, ScopeFinder> = new Map();
+     
+     public static getFinder(languageId: string): ScopeFinder {
+       // Return appropriate finder for language
+     }
+     
+     public static registerFinder(finder: ScopeFinder): void {
+       // Register a new finder
+     }
+   }
+   ```
+
+3. **Handlers**: Command handlers and business logic
+   ```typescript
+   // features/scope-deletion/handlers.ts
+   export class ScopeHandlers {
+     public static async handleDeleteScope(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, currentScopeInfo: ScopeInfo | null): Promise<void> {
+       // Implementation that uses the appropriate finder and UI utils
+     }
+     
+     public static async handleSelectScope(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, currentScopeInfo: ScopeInfo | null): Promise<void> {
+       // Implementation that uses the appropriate finder and UI utils
+     }
+   }
+   ```
+
+4. **UI Utilities**: UI-related utilities and presentation logic
+   ```typescript
+   // features/scope-deletion/ui-utils.ts
+   export class ScopeUiUtils {
+     public static showSuccessMessage(scopeType: ScopeType, scopeName: string, linesRemoved: number): void {
+       // Show appropriate message
+     }
+     
+     public static async highlightAndConfirmDeletion(editor: vscode.TextEditor, startLine: number, scopeType: string): Promise<boolean> {
+       // Highlight scope and ask for confirmation
+     }
+   }
+   ```
+
+5. **Feature Entry Point**: Coordinates between components and re-exports
+   ```typescript
+   // features/scope-deletion/index.ts
+   export class ScopeDeletionFeature extends FeatureModule {
+     constructor(commandRegistry: CommandRegistry) {
+       super(commandRegistry, 'Scope Deletion');
+       // Initialize
+       ScopeFinderFactory.initialize();
+     }
+     
+     register(): void {
+       // Register commands using the handlers
+     }
+     
+     // Other methods...
+   }
+   
+   // Re-export types and utilities for external use
+   export * from './types';
+   export * from './finders';
+   export * from './handlers';
+   export * from './ui-utils';
+   ```
 
 #### Language Provider Interface
 ```typescript
@@ -115,49 +232,6 @@ export class CommandRegistry {
 }
 ```
 
-#### Scope Deletion Feature Example
-```typescript
-// features/scope-deletion/index.ts
-export class ScopeDeletionFeature extends FeatureModule {
-  register(): void {
-    this.commandRegistry.registerTextEditorCommand(
-      'extension.deleteCurrentScope', 
-      this.handleDeleteScope.bind(this)
-    );
-  }
-  
-  private async handleDeleteScope(editor: vscode.TextEditor, edit: vscode.TextEditorEdit): Promise<void> {
-    const languageDetector = container.get(LanguageDetector);
-    const provider = languageDetector.getProviderForDocument(editor.document);
-    
-    if (!provider) {
-      vscode.window.showInformationMessage(`Language not supported for scope deletion.`);
-      return;
-    }
-    
-    const position = editor.selection.active;
-    
-    // Check for function scope
-    const functionRange = provider.findFunction(editor.document, position);
-    if (functionRange) {
-      await this.deleteRange(editor, functionRange);
-      return;
-    }
-    
-    // Check for class scope
-    const classRange = provider.findClass(editor.document, position);
-    if (classRange) {
-      await this.deleteRange(editor, classRange);
-      return;
-    }
-    
-    vscode.window.showInformationMessage("Cursor is not within a supported code scope.");
-  }
-  
-  // Other implementation methods...
-}
-```
-
 ### 4. Dependency Injection 💉
 
 ```typescript
@@ -201,111 +275,66 @@ export function activate(context: vscode.ExtensionContext) {
     // Add more features here
   ];
   
-  // Register and activate all features
   features.forEach(feature => {
     feature.register();
     feature.activate();
+    context.subscriptions.push({
+      dispose: () => feature.deactivate()
+    });
   });
   
-  // Add all disposables to context
+  // Register all commands with context
   context.subscriptions.push(...commandRegistry.getDisposables());
 }
 ```
 
-## ✅ Benefits of This Architecture
+## 📈 Roadmap & Implementation Strategy
 
-| Benefit | Description |
-|---------|-------------|
-| **🔌 Extensibility** | • Adding new features is as simple as creating a new feature module<br>• Adding language support only requires implementing a new language provider |
-| **🧹 Maintainability** | • Clear separation of concerns<br>• Isolated modules with focused responsibilities<br>• Easier to test individual components |
-| **🔢 Language Versioning** | • Each language provider can support multiple versions<br>• Version-specific logic is encapsulated in the provider |
-| **♻️ Code Reuse** | • Common utilities extracted to shared modules<br>• Less duplication across features |
-| **🚀 Progressive Enhancement** | • Basic features can work across many languages<br>• Advanced features can be available only for fully supported languages |
+### Phase 1: Refactoring for Modularity
 
-## 🔄 System Architecture Flow
+- ✅ Extract feature modules into their own directories
+- ✅ Implement base classes and interfaces for features
+- ✅ Refactor bracket-scope feature to new architecture
+- ✅ Refactor scope-deletion feature to new architecture
 
-```mermaid
-flowchart TD
-    A[Extension Entry Point] --> B[Command Registry]
-    A --> C[Language Detector]
-    
-    C --> D[TypeScript Provider]
-    C --> E[JavaScript Provider]
-    C --> F[Other Language Providers]
-    
-    A --> G[Feature Modules]
-    
-    G --> H[Scope Deletion]
-    G --> I[Bracket Scope]
-    G --> J[Future Features]
-    
-    H --> B
-    I --> B
-    J --> B
-    
-    H --> K{Language Provider}
-    I --> K
-    J --> K
-    
-    K --> D
-    K --> E
-    K --> F
-    
-    style A fill:#f9d77e,stroke:#f39c12
-    style B fill:#aed6f1,stroke:#3498db
-    style C fill:#d2b4de,stroke:#8e44ad
-    style K fill:#d2b4de,stroke:#8e44ad
-    style G fill:#f1948a,stroke:#e74c3c
-```
+### Phase 2: Language Provider System
 
-## 📌 Feature Command Flow
+- 🔄 Define language provider interface
+- 🔄 Implement TypeScript/JavaScript providers
+- 🔄 Create language detection service
+- 🔄 Update features to use language providers
 
-```mermaid
-sequenceDiagram
-    actor User
-    participant VS as VS Code
-    participant Ext as Extension
-    participant CR as Command Registry
-    participant FM as Feature Module
-    participant LD as Language Detector
-    participant LP as Language Provider
-    
-    User->>VS: Trigger Command
-    VS->>Ext: Forward Command
-    Ext->>CR: Route Command
-    CR->>FM: Execute Handler
-    FM->>LD: Get Provider
-    LD->>LP: Select Appropriate Provider
-    LP-->>FM: Return Language-Specific Logic
-    FM->>VS: Execute Operation
-    VS-->>User: Show Results
-```
+### Phase 3: Additional Language Support
 
-## 📋 Implementation Roadmap
+- 🕒 Implement Python provider
+- 🕒 Implement Java provider
+- 🕒 Implement C# provider
+- 🕒 Add tests for language-specific features
 
-| Phase | Task | Priority | Complexity |
-|-------|------|----------|------------|
+### Phase 4: Advanced Features & Optimization
+
+- 🕒 Add scope visualization feature
+- 🕒 Implement scope insertion commands
+- 🕒 Performance optimization for large files
+- 🕒 User-configurable language settings
+
+## 📊 Implementation Priority
+
+| Priority | Task | Importance | Difficulty |
+|----------|------|------------|------------|
 | **1** | Refactor existing code | High | Medium |
 |       | • Separate language-specific logic from operations | | |
 |       | • Create TypeScript and JavaScript providers | | |
 |       | • Move utility functions to appropriate modules | | |
 | **2** | Create core infrastructure | High | High |
 |       | • Implement command registry | | |
-|       | • Build language provider system | | |
-|       | • Set up feature module base classes | | |
-| **3** | Add configuration system | Medium | Medium |
-|       | • Allow per-language settings | | |
-|       | • Support feature-specific configurations | | |
-| **4** | Test with new languages | Medium | High |
-|       | • Implement a provider for a third language | | |
-|       | • Verify extension with multiple languages | | |
-
-## 🎨 Design Patterns Used
-
-| Pattern | Component | Purpose |
-|---------|-----------|---------|
-| **🔄 Strategy** | Language Provider | Interchangeable language-specific implementations |
-| **💉 Dependency Injection** | Service Container | Loose coupling between components |
-| **📝 Command** | Command Registry | Encapsulate all information needed to perform an action |
-| **📦 Module** | Feature Modules | Organize related functionality |
-| **🏭 Factory** | Language Provider Creation | Create appropriate language providers |
+|       | • Create feature module base class | | |
+|       | • Design language provider interface | | |
+| **3** | Add support for more languages | Medium | Medium |
+|       | • Python | | |
+|       | • Java | | |
+|       | • C# | | |
+| **4** | Implement advanced features | Low | High |
+|       | • Scope visualization | | |
+|       | • Custom scope rules | | |
+|       | • Performance optimizations | | |
