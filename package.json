@@ -48,6 +48,12 @@
           "default": false,
           "description": "Whether to highlight the scope before deleting it and show a confirmation dialog",
           "scope": "window"
+        },
+        "vscodeUtilities.copyToClipboard": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to automatically copy deleted content to the clipboard",
+          "scope": "window"
         }
       }
     }

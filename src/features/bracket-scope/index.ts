@@ -54,6 +54,7 @@ export class BracketScopeFeature extends FeatureModule {
     // Check if highlighting is enabled in configuration
     const config = vscode.workspace.getConfiguration('vscodeUtilities');
     const highlightBeforeDeleting = config.get<boolean>('highlightBeforeDeleting', false);
+    const copyToClipboard = config.get<boolean>('copyToClipboard', true);
     
     // First, try to find the nearest bracket pair containing the cursor
     const bracketRange = this.findBracketPairContainingCursor(document, cursorLine, cursorChar);
@@ -84,11 +85,13 @@ export class BracketScopeFeature extends FeatureModule {
       if (highlightBeforeDeleting) {
         // Highlight the content and ask for confirmation
         if (await this.highlightAndConfirmBracketDeletion(editor, contentRange, `bracket content${contextText}`, linesRemoved)) {
-          // Get the text content to copy to clipboard
+          // Get the text content
           const contentText = document.getText(contentRange);
           
-          // Copy to clipboard
-          await vscode.env.clipboard.writeText(contentText);
+          // Copy to clipboard if enabled
+          if (copyToClipboard) {
+            await vscode.env.clipboard.writeText(contentText);
+          }
           
           // Delete the content between brackets (excluding the brackets themselves)
           await editor.edit(editBuilder => {
@@ -97,7 +100,12 @@ export class BracketScopeFeature extends FeatureModule {
           
           // Show detailed message with expanded information
           const message = `Deleted content between brackets${contextText}`;
-          const detailMessage = `From line ${bracketRange.openBracketLine + 1} to ${bracketRange.closeBracketLine + 1} (${linesRemoved} lines affected). Content copied to clipboard.`;
+          let detailMessage = `From line ${bracketRange.openBracketLine + 1} to ${bracketRange.closeBracketLine + 1} (${linesRemoved} lines affected)`;
+          
+          // Add clipboard info to the message if enabled
+          if (copyToClipboard) {
+            detailMessage += ". Content copied to clipboard.";
+          }
           
           // Use information message type with detail option for expanded view
           vscode.window.showInformationMessage(message, { detail: detailMessage, modal: false });
@@ -105,11 +113,13 @@ export class BracketScopeFeature extends FeatureModule {
       } else {
         // Delete without highlighting
         
-        // Get the text content to copy to clipboard
+        // Get the text content
         const contentText = document.getText(contentRange);
         
-        // Copy to clipboard
-        await vscode.env.clipboard.writeText(contentText);
+        // Copy to clipboard if enabled
+        if (copyToClipboard) {
+          await vscode.env.clipboard.writeText(contentText);
+        }
         
         await editor.edit(editBuilder => {
           editBuilder.delete(contentRange);
@@ -117,7 +127,12 @@ export class BracketScopeFeature extends FeatureModule {
         
         // Show detailed message with expanded information
         const message = `Deleted content between brackets${contextText}`;
-        const detailMessage = `From line ${bracketRange.openBracketLine + 1} to ${bracketRange.closeBracketLine + 1} (${linesRemoved} lines affected). Content copied to clipboard.`;
+        let detailMessage = `From line ${bracketRange.openBracketLine + 1} to ${bracketRange.closeBracketLine + 1} (${linesRemoved} lines affected)`;
+        
+        // Add clipboard info to the message if enabled
+        if (copyToClipboard) {
+          detailMessage += ". Content copied to clipboard.";
+        }
         
         // Use information message type with detail option for expanded view
         vscode.window.showInformationMessage(message, { detail: detailMessage, modal: false });
@@ -152,11 +167,13 @@ export class BracketScopeFeature extends FeatureModule {
         if (highlightBeforeDeleting) {
           // Highlight the content and ask for confirmation
           if (await this.highlightAndConfirmBracketDeletion(editor, contentRange, `next bracket pair content${contextText}`, linesRemoved)) {
-            // Get the text content to copy to clipboard
+            // Get the text content
             const contentText = document.getText(contentRange);
             
-            // Copy to clipboard
-            await vscode.env.clipboard.writeText(contentText);
+            // Copy to clipboard if enabled
+            if (copyToClipboard) {
+              await vscode.env.clipboard.writeText(contentText);
+            }
             
             // Delete the content between the next bracket pair (excluding the brackets)
             await editor.edit(editBuilder => {
@@ -165,7 +182,12 @@ export class BracketScopeFeature extends FeatureModule {
             
             // Show detailed message with expanded information
             const message = `Deleted content between next bracket pair${contextText}`;
-            const detailMessage = `From line ${nextBracketRange.openBracketLine + 1} to ${nextBracketRange.closeBracketLine + 1} (${linesRemoved} lines affected). Content copied to clipboard.`;
+            let detailMessage = `From line ${nextBracketRange.openBracketLine + 1} to ${nextBracketRange.closeBracketLine + 1} (${linesRemoved} lines affected)`;
+            
+            // Add clipboard info to the message if enabled
+            if (copyToClipboard) {
+              detailMessage += ". Content copied to clipboard.";
+            }
             
             // Use warning message type for a different icon
             vscode.window.showWarningMessage(message, { detail: detailMessage, modal: false });
@@ -173,11 +195,13 @@ export class BracketScopeFeature extends FeatureModule {
         } else {
           // Delete without highlighting
           
-          // Get the text content to copy to clipboard
+          // Get the text content
           const contentText = document.getText(contentRange);
           
-          // Copy to clipboard
-          await vscode.env.clipboard.writeText(contentText);
+          // Copy to clipboard if enabled
+          if (copyToClipboard) {
+            await vscode.env.clipboard.writeText(contentText);
+          }
           
           await editor.edit(editBuilder => {
             editBuilder.delete(contentRange);
@@ -185,7 +209,12 @@ export class BracketScopeFeature extends FeatureModule {
           
           // Show detailed message with expanded information
           const message = `Deleted content between next bracket pair${contextText}`;
-          const detailMessage = `From line ${nextBracketRange.openBracketLine + 1} to ${nextBracketRange.closeBracketLine + 1} (${linesRemoved} lines affected). Content copied to clipboard.`;
+          let detailMessage = `From line ${nextBracketRange.openBracketLine + 1} to ${nextBracketRange.closeBracketLine + 1} (${linesRemoved} lines affected)`;
+          
+          // Add clipboard info to the message if enabled
+          if (copyToClipboard) {
+            detailMessage += ". Content copied to clipboard.";
+          }
           
           // Use warning message type for a different icon
           vscode.window.showWarningMessage(message, { detail: detailMessage, modal: false });

@@ -170,11 +170,17 @@ export class ScopeDeletionFeature extends FeatureModule {
         new vscode.Position(endLine, document.lineAt(endLine).text.length)
       );
       
-      // Get the text content of the scope to copy to clipboard
+      // Get the text content of the scope
       const scopeText = document.getText(range);
       
-      // Copy to clipboard
-      await vscode.env.clipboard.writeText(scopeText);
+      // Check if we should copy to clipboard
+      const configuration = vscode.workspace.getConfiguration('vscodeUtilities');
+      const copyToClipboard = configuration.get<boolean>('copyToClipboard', true);
+      
+      // Copy to clipboard if enabled
+      if (copyToClipboard) {
+        await vscode.env.clipboard.writeText(scopeText);
+      }
       
       // Calculate lines removed (adding 1 because line counts are zero-indexed)
       const linesRemoved = endLine - scopeStartLine + 1;
@@ -186,7 +192,12 @@ export class ScopeDeletionFeature extends FeatureModule {
       
       // Show detailed message with appropriate icon
       const message = `${scopeType} '${scopeName}' deleted successfully!`;
-      const detailMessage = `Deleted ${linesRemoved} lines (from line ${scopeStartLine + 1} to line ${endLine + 1}). Content copied to clipboard.`;
+      let detailMessage = `Deleted ${linesRemoved} lines (from line ${scopeStartLine + 1} to line ${endLine + 1})`;
+      
+      // Add clipboard info to the message if enabled
+      if (copyToClipboard) {
+        detailMessage += ". Content copied to clipboard.";
+      }
       
       // Use different message types based on the scope type to get different icons
       if (scopeType.toLowerCase() === 'function') {
