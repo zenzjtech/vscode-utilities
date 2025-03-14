@@ -26,6 +26,10 @@
       {
         "command": "extension.deleteCurrentBracketScope",
         "title": "Delete Content Within Current Brackets"
+      },
+      {
+        "command": "extension.selectCurrentBracketScope",
+        "title": "Select Current Bracket Scope and Copy to Clipboard"
       }
     ],
     "keybindings": [
@@ -38,6 +42,11 @@
         "command": "extension.deleteCurrentBracketScope",
         "key": "ctrl+c ctrl+b",
         "when": "editorTextFocus && !editorReadonly"
+      },
+      {
+        "command": "extension.selectCurrentBracketScope",
+        "key": "ctrl+c ctrl+s",
+        "when": "editorTextFocus"
       }
     ],
     "configuration": {

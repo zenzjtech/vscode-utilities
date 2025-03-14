@@ -33,7 +33,13 @@ export class BracketScopeFeature extends FeatureModule {
       this.handleDeleteBracketScope.bind(this)
     );
     
+    const selectDisposable = this.commandRegistry.registerTextEditorCommand(
+      'extension.selectCurrentBracketScope',
+      this.handleSelectBracketScope.bind(this)
+    );
+    
     this.addDisposable(disposable);
+    this.addDisposable(selectDisposable);
   }
 
   /**
@@ -221,6 +227,123 @@ export class BracketScopeFeature extends FeatureModule {
         }
       } else {
         vscode.window.showInformationMessage("No bracket scope found.");
+      }
+    }
+  }
+
+  /**
+   * Selects the content between the bracket pair that contains the cursor and copies it to clipboard
+   */
+  private async handleSelectBracketScope(
+    editor: vscode.TextEditor, 
+    edit: vscode.TextEditorEdit, 
+    position?: vscode.Position
+  ): Promise<void> {
+    const document = editor.document;
+    
+    // If position is not provided, use the active selection position
+    const cursorPosition = position || editor.selection.active;
+    const cursorLine = cursorPosition.line;
+    const cursorChar = cursorPosition.character;
+    
+    // First, try to find the nearest bracket pair containing the cursor
+    const bracketRange = this.findBracketPairContainingCursor(document, cursorLine, cursorChar);
+    
+    if (bracketRange) {
+      // Create a range for the content between brackets (excluding the brackets themselves)
+      const contentRange = new vscode.Range(
+        new vscode.Position(bracketRange.openBracketLine, bracketRange.openBracketChar + 1), // Start after the opening bracket
+        new vscode.Position(bracketRange.closeBracketLine, bracketRange.closeBracketChar) // End before the closing bracket
+      );
+      
+      // Calculate total lines in scope
+      const linesInScope = bracketRange.closeBracketLine - bracketRange.openBracketLine + 1;
+      
+      // Get line for context where the brackets are
+      let contextText = "";
+      try {
+        // Try to extract some context from the surrounding code
+        const lineText = document.lineAt(bracketRange.openBracketLine).text.trim();
+        const contextMatch = lineText.match(/(\w+)\s*{/);
+        if (contextMatch && contextMatch.length > 1) {
+          contextText = ` in '${contextMatch[1]}'`;
+        }
+      } catch (e) {
+        // Ignore any errors in getting context
+      }
+      
+      // Get the text content
+      const contentText = document.getText(contentRange);
+      
+      // Create a new selection that covers the entire content range
+      editor.selection = new vscode.Selection(
+        contentRange.start,
+        contentRange.end
+      );
+      
+      // Copy the content to clipboard
+      await vscode.env.clipboard.writeText(contentText);
+      
+      // Scroll to show the highlighted area
+      editor.revealRange(contentRange, vscode.TextEditorRevealType.InCenter);
+      
+      // Show information message
+      const message = `Selected bracket scope${contextText}`;
+      const detailMessage = `From line ${bracketRange.openBracketLine + 1} to ${bracketRange.closeBracketLine + 1} (${linesInScope} lines). Content copied to clipboard.`;
+      
+      // Use information message type with detail option
+      vscode.window.showInformationMessage(message, { detail: detailMessage, modal: false });
+    } else {
+      // If no bracket pair contains the cursor, look for the next bracket pair
+      const nextBracketRange = this.findNextBracketPair(document, cursorLine, cursorChar);
+      
+      if (nextBracketRange) {
+        // Create a range for the content between the next bracket pair (excluding the brackets)
+        const contentRange = new vscode.Range(
+          new vscode.Position(nextBracketRange.openBracketLine, nextBracketRange.openBracketChar + 1), // Start after the opening bracket
+          new vscode.Position(nextBracketRange.closeBracketLine, nextBracketRange.closeBracketChar) // End before the closing bracket
+        );
+        
+        // Calculate total lines in scope
+        const linesInScope = nextBracketRange.closeBracketLine - nextBracketRange.openBracketLine + 1;
+        
+        // Get line for context where the brackets are
+        let contextText = "";
+        try {
+          // Try to extract some context from the surrounding code
+          const lineText = document.lineAt(nextBracketRange.openBracketLine).text.trim();
+          const contextMatch = lineText.match(/(\w+)\s*{/);
+          if (contextMatch && contextMatch.length > 1) {
+            contextText = ` in '${contextMatch[1]}'`;
+          }
+        } catch (e) {
+          // Ignore any errors in getting context
+        }
+        
+        // Get the text content
+        const contentText = document.getText(contentRange);
+        
+        // Create a new selection that covers the entire content range
+        editor.selection = new vscode.Selection(
+          contentRange.start,
+          contentRange.end
+        );
+        
+        // Copy the content to clipboard
+        await vscode.env.clipboard.writeText(contentText);
+        
+        // Scroll to show the highlighted area
+        editor.revealRange(contentRange, vscode.TextEditorRevealType.InCenter);
+        
+        // Show information message
+        const message = `Selected next bracket scope${contextText}`;
+        const detailMessage = `From line ${nextBracketRange.openBracketLine + 1} to ${nextBracketRange.closeBracketLine + 1} (${linesInScope} lines). Content copied to clipboard.`;
+        
+        // Use warning message type for a different icon
+        vscode.window.showWarningMessage(message, { detail: detailMessage, modal: false });
+      } else {
+        // No bracket pair found
+        vscode.window.showErrorMessage('No bracket scope found at or after the cursor position.');
       }
     }
   }
