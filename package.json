@@ -1,21 +1,31 @@
 {
-  "name": "ui-enhancer",
-  "displayName": "ui-enhancer",
-  "description": "",
+  "name": "vscode-utilities",
+  "displayName": "vscode-utilities",
+  "description": "VS Code UI enhancement extension",
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zenzjtech/vscode-utilities.git"
+  },
   "engines": {
     "vscode": "^1.54.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "ui-enhancer.helloWorld",
-        "title": "Hello World"
+        "command": "extension.deleteCurrentScope",
+        "title": "Delete Current Scope"
+      },
+      {
+        "command": "extension.deleteCurrentBracketScope",
+        "title": "Delete Content Within Current Brackets"
       }
     ]
   },

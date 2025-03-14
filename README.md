@@ -1,71 +1,62 @@
-# ui-enhancer README
+# UI Enhancer for VS Code
 
-This is the README for your extension "ui-enhancer". After writing up a brief description, we recommend including the following sections.
+A Visual Studio Code extension that enhances the user interface with sleek customizations.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+### Enhanced Scrollbars
 
-For example if there is an image subfolder under your extension project workspace:
+This extension provides customized scrollbars that are:
+- **Thinner** (50% of default width)
+- **Rounded corners** for a modern look
+- Maintains VS Code's native coloring for consistency
 
-\!\[feature X\]\(images/feature-x.png\)
+![Enhanced Scrollbars](images/scrollbar-comparison.png)
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+## Installation
+
+1. Install this extension from the VS Code Marketplace
+2. Install the "Custom CSS and JS Loader" extension (by be5invis)
+3. Configure the custom CSS loader as described below
+
+## Configuration
+
+After installing this extension, you need to:
+
+1. Run the command `UI Enhancer: Apply Thin Rounded Scrollbars` from the Command Palette (Ctrl+Shift+P or Cmd+Shift+P)
+2. Follow the prompts to install the "Custom CSS and JS Loader" extension if you haven't already
+3. Click "Show Configuration" to see the required settings
+4. Add the provided CSS path to your settings.json under the `vscode_custom_css.imports` setting
+5. Run the "Reload Custom CSS and JS" command and restart VS Code when prompted
+
+## Toggle On/Off
+
+You can toggle the enhanced scrollbars on and off at any time:
+
+1. Open the Command Palette (Ctrl+Shift+P or Cmd+Shift+P)
+2. Run the command `UI Enhancer: Apply Thin Rounded Scrollbars` again to toggle the feature
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- Visual Studio Code v1.54.0 or higher
+- "Custom CSS and JS Loader" extension (be5invis.vscode-custom-css)
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+This extension doesn't add any direct settings to VS Code. Instead, it works with the "Custom CSS and JS Loader" extension to apply the UI enhancements.
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- The extension requires a separate "Custom CSS and JS Loader" extension due to VS Code's limitations on directly modifying the UI
+- On some platforms, administrative privileges may be required for the Custom CSS Loader to function
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.0.1
 
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+- Initial release
+- Added thin (50%) scrollbars with rounded corners
 
 ---
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
 
 **Enjoy!**
