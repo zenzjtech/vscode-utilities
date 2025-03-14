@@ -64,6 +64,25 @@ Handles detection and deletion of code scopes like functions, classes, interface
 | `finders/typescript-finder.ts` | Implementation for TypeScript/JavaScript scope finding |
 | `finders/python-finder.ts` | Implementation for Python scope finding using indentation-based blocks |
 
+#### S-expression Navigation Feature (`src/features/sexp-navigation/`)
+
+Provides Emacs-like navigation, selection, and manipulation of balanced expressions (S-expressions).
+
+| File | Description |
+|------|-------------|
+| `index.ts` | Feature entry point, registers commands and initializes navigator factory |
+| `types.ts` | Defines interfaces for S-expression boundaries and navigators |
+| `ui-utils.ts` | UI-related utilities for status messages and visual feedback |
+| `finders/index.ts` | Factory for language-specific S-expression navigators |
+| `finders/typescript-navigator.ts` | Implementation for TypeScript/JavaScript S-expression navigation |
+| `handlers/` | Directory containing specialized handler modules |
+| `handlers/index.ts` | Facade that maintains backward compatibility for the API |
+| `handlers/base-handler.ts` | Abstract base class with common utility methods |
+| `handlers/navigation-handlers.ts` | Handlers for forward and backward navigation commands |
+| `handlers/selection-handlers.ts` | Handlers for marking and selecting expressions |
+| `handlers/transposition-handlers.ts` | Handlers for transposing and rearranging expressions |
+| `handlers.ts` | Original handler file (deprecated, maintained for reference) |
+
 ### 🚪 Extension Entry Point (`src/extension.ts`)
 
 The main entry point for the extension, responsible for:
@@ -104,6 +123,13 @@ The following components have been recently refactored to improve modularity and
    - Added support for multiple programming languages:
      - TypeScript/JavaScript
      - Python (indentation-based scope detection)
+
+3. **S-expression Navigation Feature**
+   - Implemented Handler Specialization Pattern to split large handler file
+   - Created base handler class with common utilities
+   - Specialized handlers for navigation, selection, and transposition
+   - Used facade pattern to maintain backward compatibility
+   - Improved code organization and maintainability
 
 ## 🚀 Future Structure Additions
 
