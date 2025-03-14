@@ -4,3 +4,4 @@
  */
 export * from './scope-deletion';
 export * from './bracket-scope';
+export * from './sexp-navigation';

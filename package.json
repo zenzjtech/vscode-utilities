@@ -38,6 +38,14 @@
       {
         "command": "extension.showScopeActions",
         "title": "Show Scope Actions"
+      },
+      {
+        "command": "extension.forwardSexp",
+        "title": "Navigate to End of S-expression (Emacs-like Forward Sexp)"
+      },
+      {
+        "command": "extension.backwardSexp",
+        "title": "Navigate to Start of S-expression (Emacs-like Backward Sexp)"
       }
     ],
     "keybindings": [
@@ -59,6 +67,16 @@
       {
         "command": "extension.selectCurrentScope",
         "key": "ctrl+c ctrl+a",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "extension.forwardSexp",
+        "key": "ctrl+alt+f",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "extension.backwardSexp",
+        "key": "ctrl+alt+b",
         "when": "editorTextFocus"
       }
     ],

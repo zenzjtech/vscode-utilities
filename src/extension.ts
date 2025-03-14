@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { CommandRegistry, container } from './core';
-import { ScopeDeletionFeature, BracketScopeFeature } from './features';
+import { ScopeDeletionFeature, BracketScopeFeature, SexpNavigationFeature } from './features';
 
 /**
  * Activate the extension
@@ -16,7 +16,8 @@ export function activate(context: vscode.ExtensionContext) {
     // Initialize and register features
     const features = [
         new ScopeDeletionFeature(commandRegistry),
-        new BracketScopeFeature(commandRegistry)
+        new BracketScopeFeature(commandRegistry),
+        new SexpNavigationFeature(commandRegistry)
     ];
 
     // Register all features
